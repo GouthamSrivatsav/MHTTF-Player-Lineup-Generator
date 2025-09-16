@@ -18,6 +18,12 @@ try:
 except ImportError:
     MATPLOTLIB_AVAILABLE = False
 
+try:
+    from playwright.sync_api import sync_playwright
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    PLAYWRIGHT_AVAILABLE = False
+
 # Configure Streamlit page layout for full screen width
 st.set_page_config(page_title="MHTTF Village League Tennis Lineup Generator", layout="wide")
 
@@ -217,10 +223,177 @@ def wrap_long_text(text, max_len=15):
         # Force break long single words
         return "<br>".join([text[i:i+max_len] for i in range(0, len(text), max_len)])
 
+def create_html_table(selected_lineup, team_name, mobile_optimized=False):
+    """Create a clean HTML table for screenshot conversion"""
+    
+    rounds_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
+    
+    # Mobile vs desktop styling
+    if mobile_optimized:
+        container_width = "800px"
+        table_font_size = "24px"
+        title_font_size = "36px"
+        cell_padding = "20px 15px"
+        row_height = "auto"
+    else:
+        container_width = "1000px"
+        table_font_size = "20px"
+        title_font_size = "32px"
+        cell_padding = "16px 12px"
+        row_height = "auto"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{
+                margin: 0;
+                padding: 40px;
+                background-color: #FFF8DC;
+                font-family: 'Arial', sans-serif;
+                width: {container_width};
+                box-sizing: border-box;
+            }}
+            .container {{
+                width: 100%;
+                background-color: #FFF8DC;
+            }}
+            h1 {{
+                text-align: center;
+                font-size: {title_font_size};
+                font-weight: bold;
+                color: #000;
+                margin: 0 0 30px 0;
+            }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                background-color: #FFA07A;
+                border: 3px solid #006064;
+                font-size: {table_font_size};
+                font-weight: bold;
+            }}
+            th {{
+                background-color: #FFA07A;
+                color: #000;
+                padding: {cell_padding};
+                text-align: left;
+                border: 2px solid #006064;
+                font-weight: bold;
+            }}
+            td {{
+                padding: {cell_padding};
+                border: 2px solid #006064;
+                color: #000;
+                font-weight: bold;
+                line-height: 1.4;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                height: {row_height};
+                vertical-align: middle;
+            }}
+            .round-col {{
+                width: 15%;
+                text-align: center;
+            }}
+            .player-col {{
+                width: 85%;
+                text-align: left;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Team: {team_name}</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="round-col">Round</th>
+                        <th class="player-col">Player(s)</th>
+                    </tr>
+                </thead>
+                <tbody>
+    """
+    
+    for round_name in rounds_order:
+        if round_name in selected_lineup:
+            selection = selected_lineup[round_name]
+            # Format with line breaks for long doubles
+            if isinstance(selection, tuple) and len(selection) >= 2:
+                combined = " / ".join(selection)
+                if len(combined) > 20:
+                    player_text = f"{selection[0]} /\\n{selection[1]}"
+                else:
+                    player_text = combined
+            else:
+                player_text = format_player_names(selection)
+        else:
+            player_text = "Not selected"
+        
+        html_content += f"""
+                    <tr>
+                        <td class="round-col">{round_name}</td>
+                        <td class="player-col">{player_text}</td>
+                    </tr>
+        """
+    
+    html_content += """
+                </tbody>
+            </table>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return html_content
+
+def create_html_screenshot(selected_lineup, team_name, mobile_optimized=False):
+    """Convert HTML table to screenshot using Playwright"""
+    
+    if not PLAYWRIGHT_AVAILABLE:
+        raise Exception("Playwright not available")
+    
+    html_content = create_html_table(selected_lineup, team_name, mobile_optimized)
+    
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        
+        # Set viewport size
+        if mobile_optimized:
+            page.set_viewport_size({"width": 900, "height": 1200})
+        else:
+            page.set_viewport_size({"width": 1100, "height": 1400})
+        
+        # Load HTML content
+        page.set_content(html_content)
+        
+        # Wait for fonts to load
+        page.wait_for_timeout(1000)
+        
+        # Take screenshot
+        screenshot_bytes = page.screenshot(
+            type='png',
+            full_page=True,
+            clip=None
+        )
+        
+        browser.close()
+        return screenshot_bytes
 
 def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
-    """Create lineup image using Plotly table for better text rendering"""
+    """Create lineup image with multiple fallback strategies"""
     
+    # Try HTML screenshot first (best quality and text wrapping)
+    if PLAYWRIGHT_AVAILABLE:
+        try:
+            return create_html_screenshot(selected_lineup, team_name, mobile_optimized)
+        except Exception as html_error:
+            print(f"HTML screenshot failed: {html_error}")
+    
+    # Fallback to Plotly if available
     if not PLOTLY_AVAILABLE:
         # Fallback to PIL if plotly not available
         return create_simple_pil_fallback(selected_lineup, team_name, mobile_optimized)
