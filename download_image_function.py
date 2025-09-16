@@ -87,14 +87,14 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
         
         # Mobile vs Desktop settings
         if mobile_optimized:
-            width, height = 600, 1000
+            width, height = 600, 1200  # Increased height for title space
             title_font_size = 28
             header_font_size = 22
             cell_font_size = 20
             cell_height = 60
             title_margin = 80
         else:
-            width, height = 900, 1200
+            width, height = 900, 1400  # Increased height for title space
             title_font_size = 36
             header_font_size = 28
             cell_font_size = 24
@@ -153,7 +153,7 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
         fig.add_annotation(
             text=f"<b>Team: {team_name}</b>",
             x=0.5,
-            y=1.08,  # Position above the table
+            y=1.15,  # Position even higher above the table
             xref="paper",
             yref="paper",
             xanchor="center",
