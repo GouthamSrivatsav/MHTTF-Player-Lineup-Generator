@@ -315,29 +315,32 @@ def create_matplotlib_table(selected_lineup, team_name, mobile_optimized=False):
         lineup_data.append([round_name, player_text])
         # Track the longest player text
         max_player_text_length = max(max_player_text_length, len(player_text))
+        print(f"DEBUG: {round_name}: '{player_text}' ({len(player_text)} chars)")
     
-    # Calculate dynamic column widths based on content
+    # Calculate dynamic column widths based on content - more aggressive
     if max_player_text_length > 25:  # Long text detected
-        round_col_width = 0.15  # Narrower round column
-        player_col_width = 0.85  # Wider player column
+        round_col_width = 0.12  # Much narrower round column
+        player_col_width = 0.88  # Much wider player column
     elif max_player_text_length > 15:  # Medium text
-        round_col_width = 0.18
-        player_col_width = 0.82
+        round_col_width = 0.15
+        player_col_width = 0.85
     else:  # Short text
         round_col_width = 0.2   # Default
         player_col_width = 0.8
     
-    # Mobile vs Desktop settings with dynamic width adjustment
+    # Mobile vs Desktop settings with aggressive width adjustment
     if mobile_optimized:
-        # Increase width for long text to prevent cropping
+        # Much more aggressive width increases to prevent any cropping
         if max_player_text_length > 25:
-            figsize = (7.5, 8)  # Extra wide for very long text
+            figsize = (10, 8)   # Very wide for long text
+            table_fontsize = 12  # Slightly smaller font to fit more
         elif max_player_text_length > 15:
-            figsize = (7, 8)    # Wider for medium text
+            figsize = (9, 8)    # Wide for medium text
+            table_fontsize = 13
         else:
-            figsize = (6, 8)    # Default width
+            figsize = (8, 8)    # Wider default
+            table_fontsize = 14
         title_fontsize = 20
-        table_fontsize = 14
         dpi = 150
     else:
         # Desktop always has enough space
