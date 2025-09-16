@@ -189,16 +189,33 @@ def is_available(option):
     return option not in used_players
 
 # Function to format player names (singles or doubles)
-def format_player_names(option):
+def format_player_names(option, for_plotly=False):
     """Format player names with / for doubles pairs, plain text for singles"""
     if isinstance(option, tuple):
         if len(option) >= 2:
-            return " / ".join(option)
+            combined = " / ".join(option)
+            if for_plotly and len(combined) > 20:  # Wrap long names for Plotly
+                # Break at the / for doubles
+                return f"{option[0]} /<br>{option[1]}"
+            return combined
         elif len(option) == 1:
             return option[0]
         else:
             return "Invalid selection"
     return option
+
+def wrap_long_text(text, max_len=15):
+    """Wrap text using <br> tags for Plotly tables"""
+    if len(text) <= max_len:
+        return text
+    # Find a good break point (space, /, etc.) or force break
+    words = text.split()
+    if len(words) > 1:
+        mid = len(words) // 2
+        return "<br>".join([" ".join(words[:mid]), " ".join(words[mid:])])
+    else:
+        # Force break long single words
+        return "<br>".join([text[i:i+max_len] for i in range(0, len(text), max_len)])
 
 
 def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
@@ -216,7 +233,7 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
         for round_name in rounds_order:
             if round_name in selected_lineup:
                 selection = selected_lineup[round_name]
-                player_text = format_player_names(selection)
+                player_text = format_player_names(selection, for_plotly=True)
             else:
                 player_text = "Not selected"
             lineup_data.append([round_name, player_text])
@@ -241,7 +258,10 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
             cell_height = 70
             title_margin = 100
         
-        # Create Plotly table
+        # Create Plotly table with taller cells for wrapped text
+        # Increase cell height for wrapped text
+        wrapped_cell_height = cell_height * 1.5 if any('<br>' in str(text) for text in df['Player(s)']) else cell_height
+        
         fig = go.Figure(data=[go.Table(
             columnwidth=[100, 400],
             header=dict(
@@ -256,7 +276,7 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
                 fill_color='#FFA07A',  # Light Salmon
                 align=['center', 'left'],
                 font=dict(color='black', size=cell_font_size, family="Arial"),
-                height=cell_height
+                height=wrapped_cell_height
             )
         )])
         
