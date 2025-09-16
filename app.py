@@ -189,16 +189,15 @@ def is_available(option):
     return option not in used_players
 
 # Function to format player names (singles or doubles)
-def format_player_names(option, max_length=35):
+def format_player_names(option):
     """Format player names with / for doubles pairs, plain text for singles"""
     if isinstance(option, tuple):
-        # For doubles, check total length
-        combined = " / ".join(option)
-        if len(combined) > max_length:
-            # Break into two lines with / at end of first line
-            return f"{option[0]} /\n{option[1]}"
+        if len(option) >= 2:
+            return " / ".join(option)
+        elif len(option) == 1:
+            return option[0]
         else:
-            return combined
+            return "Invalid selection"
     return option
 
 
@@ -305,6 +304,7 @@ def create_matplotlib_table(selected_lineup, team_name, mobile_optimized=False):
     # Create DataFrame for the lineup
     rounds_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
     lineup_data = []
+    max_player_text_length = 0
     
     for round_name in rounds_order:
         if round_name in selected_lineup:
@@ -313,14 +313,34 @@ def create_matplotlib_table(selected_lineup, team_name, mobile_optimized=False):
         else:
             player_text = "Not selected"
         lineup_data.append([round_name, player_text])
+        # Track the longest player text
+        max_player_text_length = max(max_player_text_length, len(player_text))
     
-    # Mobile vs Desktop settings
+    # Calculate dynamic column widths based on content
+    if max_player_text_length > 25:  # Long text detected
+        round_col_width = 0.15  # Narrower round column
+        player_col_width = 0.85  # Wider player column
+    elif max_player_text_length > 15:  # Medium text
+        round_col_width = 0.18
+        player_col_width = 0.82
+    else:  # Short text
+        round_col_width = 0.2   # Default
+        player_col_width = 0.8
+    
+    # Mobile vs Desktop settings with dynamic width adjustment
     if mobile_optimized:
-        figsize = (6, 8)
+        # Increase width for long text to prevent cropping
+        if max_player_text_length > 25:
+            figsize = (7.5, 8)  # Extra wide for very long text
+        elif max_player_text_length > 15:
+            figsize = (7, 8)    # Wider for medium text
+        else:
+            figsize = (6, 8)    # Default width
         title_fontsize = 20
         table_fontsize = 14
         dpi = 150
     else:
+        # Desktop always has enough space
         figsize = (8, 10)
         title_fontsize = 24
         table_fontsize = 16
@@ -334,14 +354,15 @@ def create_matplotlib_table(selected_lineup, team_name, mobile_optimized=False):
     # Set background color
     fig.patch.set_facecolor('#FFF8DC')  # Cornsilk
     
-    # Create table
+    # Create table with dynamic column widths
     table = ax.table(
         cellText=lineup_data,
         colLabels=['Round', 'Player(s)'],
         cellLoc='left',
         loc='center',
-        colWidths=[0.2, 0.8]
+        colWidths=[round_col_width, player_col_width]
     )
+    
     
     # Style the table
     table.auto_set_font_size(False)
