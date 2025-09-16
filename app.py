@@ -43,6 +43,12 @@ def check_password():
 if not check_password():
     st.stop()
 
+# Initialize session states early
+if 'selected_lineup' not in st.session_state:
+    st.session_state.selected_lineup = {}
+if 'current_team' not in st.session_state:
+    st.session_state.current_team = None
+
 # Add custom CSS for sticky sidebar
 st.markdown("""
 <style>
@@ -142,6 +148,12 @@ try:
         default_index = teams.index("Wicklund")
     
     team_name = st.selectbox("Select team", teams, index=default_index)
+    
+    # Check if team has changed and clear selections if so
+    if st.session_state.current_team != team_name:
+        st.session_state.selected_lineup = {}  # Clear all selections
+        st.session_state.current_team = team_name  # Update current team
+        
 except FileNotFoundError:
     st.error("📁 players_info.xlsx file not found in the current folder. Please make sure the file exists.")
     st.stop()
@@ -152,9 +164,7 @@ except Exception as e:
 players = df[df["team"] == team_name].reset_index(drop=True)
 candidates = generate_candidates(players)
 
-# Initialize session state for selections
-if 'selected_lineup' not in st.session_state:
-    st.session_state.selected_lineup = {}
+# Session states already initialized earlier
 
 # Function to get currently used players
 def get_used_players():
