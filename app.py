@@ -224,59 +224,59 @@ def wrap_long_text(text, max_len=15):
 def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
     """Create lineup image - simplified Plotly approach"""
     
+    print("DEBUG - create_lineup_image called")
+    print(f"DEBUG - PLOTLY_AVAILABLE: {PLOTLY_AVAILABLE}")
+    print(f"DEBUG - MATPLOTLIB_AVAILABLE: {MATPLOTLIB_AVAILABLE}")
+    
     # Try Plotly first (simplified approach)
     if PLOTLY_AVAILABLE:
         try:
-            return create_plotly_table_image(selected_lineup, team_name, mobile_optimized)
+            print("DEBUG - Attempting Plotly approach...")
+            result = create_plotly_table_image(selected_lineup, team_name, mobile_optimized)
+            print("DEBUG - Plotly succeeded!")
+            return result
         except Exception as plotly_error:
-            print(f"Plotly failed: {plotly_error}")
+            print(f"DEBUG - Plotly failed: {plotly_error}")
+            import traceback
+            traceback.print_exc()
     
     # Fallback to matplotlib
     if MATPLOTLIB_AVAILABLE:
         try:
-            return create_matplotlib_table(selected_lineup, team_name, mobile_optimized)
+            print("DEBUG - Falling back to matplotlib...")
+            result = create_matplotlib_table(selected_lineup, team_name, mobile_optimized)
+            print("DEBUG - Matplotlib succeeded!")
+            return result
         except Exception as mpl_error:
-            print(f"Matplotlib failed: {mpl_error}")
+            print(f"DEBUG - Matplotlib failed: {mpl_error}")
     
     # Final fallback to PIL
+    print("DEBUG - Using PIL fallback...")
     return create_simple_pil_fallback(selected_lineup, team_name, mobile_optimized)
 
 def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False):
     """Create Plotly table with proper <br> tag support"""
     
+    print("DEBUG - create_plotly_table_image called!")
+    print(f"DEBUG - selected_lineup type: {type(selected_lineup)}")
+    print(f"DEBUG - team_name: {team_name}")
+    print(f"DEBUG - mobile_optimized: {mobile_optimized}")
+    
+    # IMMEDIATE HARDCODE TEST - skip all processing
+    print("DEBUG - Using IMMEDIATE hardcoded data bypass!")
+    test_rounds = ['S1', 'S2', 'S3', 'D1', 'D2', 'D3', 'D4', 'D5']
+    test_players = [
+        'HARDCODE John Smith', 
+        'HARDCODE Jane Doe', 
+        'HARDCODE Bob Wilson', 
+        'HARDCODE Alice Cooper /<br>Mike Johnson', 
+        'HARDCODE Sarah Brown /<br>Tom Davis', 
+        'HARDCODE Lisa Wang /<br>Chris Lee', 
+        'HARDCODE Emma Stone /<br>Ryan Adams', 
+        'HARDCODE Kate Miller /<br>Jack White'
+    ]
+    
     try:
-        # Create DataFrame for the lineup
-        rounds_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
-        lineup_data = []
-        
-        print("DEBUG - Input selected_lineup:", selected_lineup)
-        
-        for round_name in rounds_order:
-            if round_name in selected_lineup:
-                selection = selected_lineup[round_name]
-                print(f"DEBUG - {round_name}: raw selection = {selection} (type: {type(selection)})")
-                # Use the existing format_player_names function with Plotly flag
-                player_text = format_player_names(selection, for_plotly=True)
-                print(f"DEBUG - {round_name}: formatted = '{player_text}'")
-            else:
-                player_text = "Not selected"
-                print(f"DEBUG - {round_name}: Not selected")
-            lineup_data.append([round_name, player_text])
-        
-        print("DEBUG - Full lineup_data:", lineup_data)
-        
-        # Extract data into explicit lists to avoid DataFrame indexing issues
-        round_names = [row[0] for row in lineup_data]
-        player_names = [row[1] for row in lineup_data]
-        
-        # Debug: verify data structure
-        print("DEBUG - Round names:", round_names)
-        print("DEBUG - Player names:", player_names)
-        
-        # Verify each pair individually
-        for i, (round_name, player_name) in enumerate(zip(round_names, player_names)):
-            print(f"DEBUG - Row {i}: {round_name} -> '{player_name}'")
-        
         # Mobile vs Desktop settings
         if mobile_optimized:
             # Mobile-optimized settings
@@ -295,28 +295,12 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
             cell_height = 70
             title_margin = 100
         
-        # TEST: Create hardcoded data to isolate the issue
-        test_rounds = ['S1', 'S2', 'S3', 'D1', 'D2', 'D3', 'D4', 'D5']
-        test_players = [
-            'John Smith', 
-            'Jane Doe', 
-            'Bob Wilson', 
-            'Alice Cooper /<br>Mike Johnson', 
-            'Sarah Brown /<br>Tom Davis', 
-            'Lisa Wang /<br>Chris Lee', 
-            'Emma Stone /<br>Ryan Adams', 
-            'Kate Miller /<br>Jack White'
-        ]
-        
-        print("DEBUG - TEST hardcoded rounds:", test_rounds)
-        print("DEBUG - TEST hardcoded players:", test_players)
-        
-        # Use hardcoded data for now to test if issue is in data or Plotly
+        # DIRECT HARDCODE TO PLOTLY
         final_rounds = test_rounds
         final_players = test_players
         
-        print("DEBUG - FINAL rounds going to Plotly:", final_rounds)
-        print("DEBUG - FINAL players going to Plotly:", final_players)
+        print("DEBUG - IMMEDIATE hardcode rounds:", final_rounds)
+        print("DEBUG - IMMEDIATE hardcode players:", final_players)
         
         # Create Plotly table with taller cells for wrapped text
         # Increase cell height for wrapped text
@@ -343,7 +327,7 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
         # Update layout with explicit width control and better sizing
         fig.update_layout(
             title=dict(
-                text=f"<b>Team: {team_name}</b>",
+                text=f"<b>HARDCODE Team: {team_name}</b>",
                 x=0.5,
                 y=0.95,
                 xanchor='center',
