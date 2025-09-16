@@ -1,24 +1,7 @@
 import streamlit as st
 import pandas as pd
 import itertools
-from PIL import Image, ImageDraw, ImageFont
-import io
-import base64
-try:
-    import plotly.graph_objects as go
-    import plotly.io as pio
-    PLOTLY_AVAILABLE = True
-except ImportError:
-    PLOTLY_AVAILABLE = False
-
-try:
-    import matplotlib.pyplot as plt
-    import matplotlib.patches as patches
-    MATPLOTLIB_AVAILABLE = True
-except ImportError:
-    MATPLOTLIB_AVAILABLE = False
-
-# Simplified approach - no longer using pyppeteer
+from download_image_function import generate_lineup_image
 
 # Configure Streamlit page layout for full screen width
 st.set_page_config(page_title="MHTTF Village League Tennis Lineup Generator", layout="wide")
@@ -267,8 +250,8 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
         rounds_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
         lineup_data = []
         
-        print("DEBUG - Processing REAL data")
-        print("DEBUG - Input selected_lineup:", selected_lineup)
+        st.write("🔍 **DEBUG - Processing REAL data**")
+        st.write(f"🔍 **DEBUG - Input selected_lineup:** {selected_lineup}")
         
         for round_name in rounds_order:
             if round_name in selected_lineup:
@@ -334,8 +317,13 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
                     break
             table_players.append(found_player)
         
-        print("DEBUG - CLOUD table_rounds:", table_rounds)
-        print("DEBUG - CLOUD table_players:", table_players)
+        st.write(f"🔍 **DEBUG - CLOUD table_rounds:** {table_rounds}")
+        st.write(f"🔍 **DEBUG - CLOUD table_players:** {table_players}")
+        
+        # Show exact mapping that will be in the table
+        st.write("🔍 **DEBUG - Exact table mapping:**")
+        for round_name, player_name in zip(table_rounds, table_players):
+            st.write(f"🔍 **{round_name}** → **{player_name}**")
         
         # Create Plotly table with taller cells for wrapped text
         wrapped_cell_height = cell_height * 1.5 if any('<br>' in str(text) for text in table_players) else cell_height
@@ -657,15 +645,6 @@ with col1:
 
 with col2:
     # Download button with on-demand image generation
-    # @st.cache_data  # TEMPORARILY DISABLED FOR DEBUGGING
-    def generate_lineup_image(selected_lineup_dict, team_name_str):
-        print("DEBUG - generate_lineup_image called!")
-        print(f"DEBUG - selected_lineup_dict: {selected_lineup_dict}")
-        print(f"DEBUG - team_name_str: {team_name_str}")
-        result = create_lineup_image(selected_lineup_dict, team_name_str, mobile_optimized=False)
-        print(f"DEBUG - create_lineup_image returned {len(result) if result else 0} bytes")
-        return result
-    
     try:
         # Only generate image when there are selections
         if st.session_state.selected_lineup:
