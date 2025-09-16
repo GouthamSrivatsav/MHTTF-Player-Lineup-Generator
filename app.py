@@ -291,6 +291,11 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
         print("DEBUG - REAL final_rounds:", final_rounds)
         print("DEBUG - REAL final_players:", final_players)
         
+        # Additional debug for cloud issues
+        print("DEBUG - Verifying data alignment:")
+        for i, (round_name, player_name) in enumerate(zip(final_rounds, final_players)):
+            print(f"DEBUG - Row {i}: '{round_name}' -> '{player_name}'")
+        
         # Mobile vs Desktop settings
         if mobile_optimized:
             # Mobile-optimized settings
@@ -309,9 +314,31 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
             cell_height = 70
             title_margin = 100
         
+        # CLOUD-ROBUST APPROACH: Build table data more explicitly
+        # Create table data as individual cell values to avoid cloud serialization issues
+        print("DEBUG - Building cloud-robust table data...")
+        
+        # Ensure we have exactly 8 rows in correct order
+        table_rounds = []
+        table_players = []
+        
+        expected_rounds = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
+        for round_name in expected_rounds:
+            table_rounds.append(round_name)
+            # Find the player for this specific round
+            found_player = "Not selected"
+            for i, (data_round, data_player) in enumerate(zip(final_rounds, final_players)):
+                if data_round == round_name:
+                    found_player = data_player
+                    print(f"DEBUG - Found {round_name}: '{found_player}'")
+                    break
+            table_players.append(found_player)
+        
+        print("DEBUG - CLOUD table_rounds:", table_rounds)
+        print("DEBUG - CLOUD table_players:", table_players)
+        
         # Create Plotly table with taller cells for wrapped text
-        # Increase cell height for wrapped text
-        wrapped_cell_height = cell_height * 1.5 if any('<br>' in str(text) for text in final_players) else cell_height
+        wrapped_cell_height = cell_height * 1.5 if any('<br>' in str(text) for text in table_players) else cell_height
         
         fig = go.Figure(data=[go.Table(
             columnwidth=[100, 400],
@@ -323,7 +350,7 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
                 height=cell_height
             ),
             cells=dict(
-                values=[final_rounds, final_players],  # Use explicit hardcoded lists
+                values=[table_rounds, table_players],  # Use cloud-robust explicit mapping
                 fill_color='#FFA07A',  # Light Salmon
                 align=['center', 'left'],
                 font=dict(color='black', size=cell_font_size, family="Arial"),
@@ -353,7 +380,7 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
         # Update traces with taller rows and explicit column values
         fig.update_traces(
             cells=dict(
-                values=[final_rounds, final_players],  # Use hardcoded test data
+                values=[table_rounds, table_players],  # Use cloud-robust data
                 height=50 if not mobile_optimized else 60,  # Taller rows for wrapped text
                 fill_color='#FFA07A',  # Light Salmon
                 align=['center', 'left'],
