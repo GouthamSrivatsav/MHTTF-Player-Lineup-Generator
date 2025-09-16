@@ -5,16 +5,11 @@ from PIL import Image, ImageDraw, ImageFont
 import io
 import base64
 try:
-    import imgkit
-    IMGKIT_AVAILABLE = True
+    import plotly.graph_objects as go
+    import plotly.io as pio
+    PLOTLY_AVAILABLE = True
 except ImportError:
-    IMGKIT_AVAILABLE = False
-    
-try:
-    import weasyprint
-    WEASYPRINT_AVAILABLE = True
-except ImportError:
-    WEASYPRINT_AVAILABLE = False
+    PLOTLY_AVAILABLE = False
 
 # Configure Streamlit page layout for full screen width
 st.set_page_config(page_title="MHTTF Village League Tennis Lineup Generator", layout="wide")
@@ -193,227 +188,103 @@ def format_player_names(option):
         return " / ".join(option)
     return option
 
-def create_lineup_html_table(selected_lineup, team_name, mobile_optimized=False):
-    """Create HTML table for lineup that can be converted to image"""
-    
-    # Define rounds in proper order
-    rounds_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
-    
-    # Create DataFrame for the lineup
-    lineup_data = []
-    for round_name in rounds_order:
-        if round_name in selected_lineup:
-            selection = selected_lineup[round_name]
-            player_text = format_player_names(selection)
-        else:
-            player_text = "Not selected"
-        lineup_data.append({"Round": round_name, "Player(s)": player_text})
-    
-    df = pd.DataFrame(lineup_data)
-    
-    # Mobile or desktop styling
-    if mobile_optimized:
-        # Mobile-optimized CSS
-        table_style = """
-        <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            background-color: #FFF8DC;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #FFF8DC;
-        }
-        h1 {
-            text-align: center;
-            font-size: 48px;
-            font-weight: bold;
-            color: #000;
-            margin: 30px 0;
-            line-height: 1.2;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: #FFA07A;
-            border: 3px solid #006064;
-            font-size: 36px;
-            font-weight: bold;
-        }
-        th {
-            background-color: #FFA07A;
-            color: #000;
-            padding: 25px 20px;
-            text-align: left;
-            border: 2px solid #006064;
-            font-size: 38px;
-            font-weight: bold;
-        }
-        td {
-            padding: 25px 20px;
-            border: 2px solid #006064;
-            color: #000;
-            font-weight: bold;
-            line-height: 1.3;
-            word-wrap: break-word;
-        }
-        .round-col {
-            width: 25%;
-            text-align: center;
-            font-size: 38px;
-        }
-        .player-col {
-            width: 75%;
-            font-size: 34px;
-        }
-        </style>
-        """
-    else:
-        # Desktop/Print-optimized CSS
-        table_style = """
-        <style>
-        body {
-            margin: 0;
-            padding: 40px;
-            background-color: #FFF8DC;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-        }
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background-color: #FFF8DC;
-        }
-        h1 {
-            text-align: center;
-            font-size: 48px;
-            font-weight: bold;
-            color: #000;
-            margin: 40px 0;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: #FFA07A;
-            border: 3px solid #006064;
-            font-size: 24px;
-            font-weight: bold;
-        }
-        th {
-            background-color: #FFA07A;
-            color: #000;
-            padding: 20px;
-            text-align: left;
-            border: 2px solid #006064;
-            font-size: 28px;
-            font-weight: bold;
-        }
-        td {
-            padding: 20px;
-            border: 2px solid #006064;
-            color: #000;
-            font-weight: bold;
-        }
-        .round-col {
-            width: 20%;
-            text-align: center;
-            font-size: 26px;
-        }
-        .player-col {
-            width: 80%;
-            font-size: 24px;
-        }
-        </style>
-        """
-    
-    # Generate HTML with CSS
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        {table_style}
-    </head>
-    <body>
-        <div class="container">
-            <h1>Team: {team_name}</h1>
-            <table>
-                <thead>
-                    <tr>
-                        <th class="round-col">Round</th>
-                        <th class="player-col">Player(s)</th>
-                    </tr>
-                </thead>
-                <tbody>
-    """
-    
-    for _, row in df.iterrows():
-        html_content += f"""
-                    <tr>
-                        <td class="round-col">{row['Round']}</td>
-                        <td class="player-col">{row['Player(s)']}</td>
-                    </tr>
-        """
-    
-    html_content += """
-                </tbody>
-            </table>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return html_content
 
 def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
-    """Create lineup image using HTML-to-image conversion for better text rendering"""
+    """Create lineup image using Plotly table for better text rendering"""
     
-    # Try HTML-to-image approach first
+    if not PLOTLY_AVAILABLE:
+        st.error("Plotly not available. Please install plotly and kaleido.")
+        return None
+    
     try:
-        html_content = create_lineup_html_table(selected_lineup, team_name, mobile_optimized)
+        # Create DataFrame for the lineup
+        rounds_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
+        lineup_data = []
         
-        # Try imgkit first (requires wkhtmltopdf)
-        if IMGKIT_AVAILABLE:
-            try:
-                options = {
-                    'format': 'png',
-                    'encoding': "UTF-8",
-                    'enable-local-file-access': None,
-                    'width': 600 if mobile_optimized else 1000,
-                    'height': 1200 if mobile_optimized else 1400,
-                    'quality': 100,
-                }
-                img_data = imgkit.from_string(html_content, False, options=options)
-                return img_data
-            except Exception as e:
-                st.warning(f"imgkit failed: {e}")
+        for round_name in rounds_order:
+            if round_name in selected_lineup:
+                selection = selected_lineup[round_name]
+                player_text = format_player_names(selection)
+            else:
+                player_text = "Not selected"
+            lineup_data.append([round_name, player_text])
         
-        # Try weasyprint as fallback
-        if WEASYPRINT_AVAILABLE:
-            try:
-                html_doc = weasyprint.HTML(string=html_content)
-                png_bytes = html_doc.write_png()
-                return png_bytes
-            except Exception as e:
-                st.warning(f"weasyprint failed: {e}")
+        df = pd.DataFrame(lineup_data, columns=["Round", "Player(s)"])
         
-        # If both fail, fall back to PIL silently
-        pass
+        # Mobile vs Desktop settings
+        if mobile_optimized:
+            # Mobile-optimized settings
+            width, height = 600, 1000
+            title_font_size = 28
+            header_font_size = 22
+            cell_font_size = 20
+            cell_height = 60
+            title_margin = 80
+        else:
+            # Desktop-optimized settings
+            width, height = 900, 1200
+            title_font_size = 36
+            header_font_size = 28
+            cell_font_size = 24
+            cell_height = 70
+            title_margin = 100
+        
+        # Create Plotly table
+        fig = go.Figure(data=[go.Table(
+            columnwidth=[100, 400],
+            header=dict(
+                values=['<b>Round</b>', '<b>Player(s)</b>'],
+                fill_color='#FFA07A',  # Light Salmon
+                align='center',
+                font=dict(color='black', size=header_font_size, family="Arial Black"),
+                height=cell_height
+            ),
+            cells=dict(
+                values=[df['Round'], df['Player(s)']],
+                fill_color='#FFA07A',  # Light Salmon
+                align=['center', 'left'],
+                font=dict(color='black', size=cell_font_size, family="Arial"),
+                height=cell_height
+            )
+        )])
+        
+        # Update layout with title and styling
+        fig.update_layout(
+            title=dict(
+                text=f"<b>Team: {team_name}</b>",
+                x=0.5,
+                y=0.95,
+                xanchor='center',
+                yanchor='top',
+                font=dict(size=title_font_size, color='black', family="Arial Black")
+            ),
+            width=width,
+            height=height,
+            margin=dict(l=50, r=50, t=title_margin, b=50),
+            paper_bgcolor='#FFF8DC',  # Cornsilk background
+            plot_bgcolor='#FFF8DC',   # Cornsilk background
+            font_family="Arial"
+        )
+        
+        # Convert to PNG bytes
+        img_bytes = pio.to_image(fig, format='png', width=width, height=height, scale=2)
+        return img_bytes
         
     except Exception as e:
-        st.error(f"HTML rendering failed: {e}")
+        st.error(f"Plotly table generation failed: {e}")
+        # Fallback to simple PIL
+        return create_simple_pil_fallback(selected_lineup, team_name, mobile_optimized)
+
+def create_simple_pil_fallback(selected_lineup, team_name, mobile_optimized=False):
+    """Simple PIL fallback if Plotly fails"""
     
-    # Fallback to PIL method - but much simpler
     if mobile_optimized:
         width, height = 600, 1200
-        title_size, text_size = 60, 48
+        title_size, text_size = 40, 32
         row_height = 100
     else:
         width, height = 800, 1400
-        title_size, text_size = 48, 32
+        title_size, text_size = 32, 24
         row_height = 80
     
     # Create simple image
@@ -427,7 +298,7 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
         title_font = ImageFont.load_default()
         text_font = ImageFont.load_default()
     
-    # Simple title
+    # Title
     draw.text((50, 50), f"Team: {team_name}", fill=(0, 0, 0), font=title_font)
     
     # Simple table
