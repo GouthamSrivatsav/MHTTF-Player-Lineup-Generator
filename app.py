@@ -203,8 +203,8 @@ with col1:
         if round_name in st.session_state.selected_lineup:
             selected = st.session_state.selected_lineup[round_name]
             selected_text = format_player_names(selected)
-            # Use non-breaking spaces (&nbsp;) to create large visual spacing
-            large_space = "\u00A0" * 20  # 20 non-breaking spaces
+            # Use em-spaces for large visual separation
+            large_space = "\u2003" * 8  # 8 em-spaces for significant visual gap
             current_selection = f"{large_space}✅ {selected_text}"
         
         # Create collapsible expander for each round (closed by default)
