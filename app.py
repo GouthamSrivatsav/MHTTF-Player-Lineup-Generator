@@ -11,6 +11,13 @@ try:
 except ImportError:
     PLOTLY_AVAILABLE = False
 
+try:
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as patches
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
+
 # Configure Streamlit page layout for full screen width
 st.set_page_config(page_title="MHTTF Village League Tennis Lineup Generator", layout="wide")
 
@@ -193,8 +200,8 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
     """Create lineup image using Plotly table for better text rendering"""
     
     if not PLOTLY_AVAILABLE:
-        st.error("Plotly not available. Please install plotly and kaleido.")
-        return None
+        # Fallback to PIL if plotly not available
+        return create_simple_pil_fallback(selected_lineup, team_name, mobile_optimized)
     
     try:
         # Create DataFrame for the lineup
@@ -266,14 +273,103 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
             font_family="Arial"
         )
         
-        # Convert to PNG bytes
-        img_bytes = pio.to_image(fig, format='png', width=width, height=height, scale=2)
-        return img_bytes
+        # Try plotly export with simplified approach
+        try:
+            # Try without specifying engine (let plotly decide)
+            img_bytes = pio.to_image(fig, format='png', width=width, height=height, scale=2)
+            return img_bytes
+        except Exception as plotly_error:
+            # If plotly fails, use matplotlib fallback
+            st.info("Using matplotlib fallback for better compatibility")
+            raise Exception(f"Plotly export failed: {plotly_error}")
         
     except Exception as e:
-        st.error(f"Plotly table generation failed: {e}")
-        # Fallback to simple PIL
+        # Try matplotlib fallback if available
+        if MATPLOTLIB_AVAILABLE:
+            try:
+                return create_matplotlib_table(selected_lineup, team_name, mobile_optimized)
+            except Exception as mpl_error:
+                st.warning(f"Matplotlib also failed: {mpl_error}")
+        
+        # Final fallback to enhanced PIL
         return create_simple_pil_fallback(selected_lineup, team_name, mobile_optimized)
+
+def create_matplotlib_table(selected_lineup, team_name, mobile_optimized=False):
+    """Create table using matplotlib - works reliably on cloud platforms"""
+    
+    # Create DataFrame for the lineup
+    rounds_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
+    lineup_data = []
+    
+    for round_name in rounds_order:
+        if round_name in selected_lineup:
+            selection = selected_lineup[round_name]
+            player_text = format_player_names(selection)
+        else:
+            player_text = "Not selected"
+        lineup_data.append([round_name, player_text])
+    
+    # Mobile vs Desktop settings
+    if mobile_optimized:
+        figsize = (6, 8)
+        title_fontsize = 20
+        table_fontsize = 14
+        dpi = 150
+    else:
+        figsize = (8, 10)
+        title_fontsize = 24
+        table_fontsize = 16
+        dpi = 200
+    
+    # Create figure
+    fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+    ax.axis('tight')
+    ax.axis('off')
+    
+    # Set background color
+    fig.patch.set_facecolor('#FFF8DC')  # Cornsilk
+    
+    # Create table
+    table = ax.table(
+        cellText=lineup_data,
+        colLabels=['Round', 'Player(s)'],
+        cellLoc='left',
+        loc='center',
+        colWidths=[0.2, 0.8]
+    )
+    
+    # Style the table
+    table.auto_set_font_size(False)
+    table.set_fontsize(table_fontsize)
+    table.scale(1, 2.5)
+    
+    # Style header
+    for i in range(2):  # 2 columns
+        table[(0, i)].set_facecolor('#FFA07A')  # Light Salmon
+        table[(0, i)].set_text_props(weight='bold', color='black')
+        table[(0, i)].set_height(0.08)
+    
+    # Style data cells
+    for i in range(1, len(lineup_data) + 1):
+        for j in range(2):
+            table[(i, j)].set_facecolor('#FFA07A')  # Light Salmon
+            table[(i, j)].set_text_props(color='black')
+            table[(i, j)].set_height(0.08)
+            if j == 0:  # Round column - center align
+                table[(i, j)].set_text_props(ha='center')
+    
+    # Add title
+    plt.title(f'Team: {team_name}', fontsize=title_fontsize, weight='bold', 
+              color='black', pad=20)
+    
+    # Save to bytes
+    img_buffer = io.BytesIO()
+    plt.savefig(img_buffer, format='png', bbox_inches='tight', 
+                facecolor='#FFF8DC', dpi=dpi, quality=100)
+    plt.close()
+    img_buffer.seek(0)
+    
+    return img_buffer.getvalue()
 
 def create_simple_pil_fallback(selected_lineup, team_name, mobile_optimized=False):
     """Simple PIL fallback if Plotly fails"""
