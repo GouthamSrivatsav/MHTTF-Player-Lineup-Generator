@@ -359,7 +359,15 @@ def create_matplotlib_table(selected_lineup, team_name, mobile_optimized=False):
         for j in range(2):
             table[(i, j)].set_facecolor('#FFA07A')  # Light Salmon
             table[(i, j)].set_text_props(color='black')
-            table[(i, j)].set_height(0.08)
+            
+            # Check if this cell has a newline and adjust height accordingly
+            cell_text = lineup_data[i-1][j]
+            if '\n' in str(cell_text):
+                table[(i, j)].set_height(0.12)  # Taller for multi-line
+                table[(i, j)].set_text_props(va='center')  # Vertically center
+            else:
+                table[(i, j)].set_height(0.08)  # Normal height
+            
             if j == 0:  # Round column - center align
                 table[(i, j)].set_text_props(ha='center')
     
