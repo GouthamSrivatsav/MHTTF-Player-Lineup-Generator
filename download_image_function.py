@@ -137,23 +137,30 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
             )
         )])
         
-        # Update layout
+        # Update layout - no title, we'll add it separately
         fig.update_layout(
-            title=dict(
-                text=f"<b>Team: {team_name}</b>",
-                x=0.5,
-                y=0.98,  # Move title higher
-                xanchor='center',
-                yanchor='top',
-                font=dict(size=title_font_size, color='black', family="Arial Black")
-            ),
             autosize=False,
             width=1000 if not mobile_optimized else 800,
             height=height,
-            margin=dict(l=50, r=50, t=title_margin + 20, b=50),  # Increase top margin
+            margin=dict(l=50, r=50, t=80, b=50),  # Reduced top margin since no title
             paper_bgcolor='#FFF8DC',  # Cornsilk background
             plot_bgcolor='#FFF8DC',   # Cornsilk background
-            font_family="Arial"
+            font_family="Arial",
+            showlegend=False
+        )
+        
+        # Add title as annotation for better control
+        fig.add_annotation(
+            text=f"<b>Team: {team_name}</b>",
+            x=0.5,
+            y=1.08,  # Position above the table
+            xref="paper",
+            yref="paper",
+            xanchor="center",
+            yanchor="bottom",
+            font=dict(size=title_font_size, color='black', family="Arial Black"),
+            showarrow=False,
+            bgcolor='rgba(255,248,220,0)',  # Transparent background
         )
         
         # Update traces
