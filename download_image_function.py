@@ -353,7 +353,7 @@ def create_simple_pil_fallback(selected_lineup, team_name, mobile_optimized=Fals
     return img_buffer.getvalue()
 
 
-@st.cache_data
+# @st.cache_data  # TEMPORARILY DISABLED FOR TESTING
 def generate_lineup_image(selected_lineup_dict, team_name_str):
     """Generate lineup image with caching"""
     return create_lineup_image(selected_lineup_dict, team_name_str, mobile_optimized=False)
