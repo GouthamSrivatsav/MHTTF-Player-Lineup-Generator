@@ -495,39 +495,30 @@ with col1:
         
 
 with col2:
-    # Main download button to trigger format selection
-    if st.button("📸 Download Lineup Image", type="primary"):
-        st.session_state.show_download_options = True
+    # Download button with on-demand image generation
+    @st.cache_data
+    def generate_lineup_image(selected_lineup_dict, team_name_str):
+        return create_lineup_image(selected_lineup_dict, team_name_str, mobile_optimized=False)
     
-    # Show download format options after main button is clicked
-    if st.session_state.get("show_download_options", False):
-        st.write("**Choose format:**")
-        
-        # Mobile-friendly download button
-        try:
-            mobile_image_data = create_lineup_image(st.session_state.selected_lineup, team_name, mobile_optimized=True)
-            st.download_button(
-                label="📱 Mobile Friendly",
-                data=mobile_image_data,
-                file_name=f"MHTTF_Lineup_{team_name}_Mobile.png",
-                mime="image/png",
-                help="Optimized for mobile viewing with large fonts"
+    try:
+        # Only generate image when there are selections
+        if st.session_state.selected_lineup:
+            image_data = generate_lineup_image(
+                dict(st.session_state.selected_lineup), 
+                team_name
             )
-        except Exception as e:
-            st.error(f"Error creating mobile image: {str(e)}")
-        
-        # Desktop-friendly download button
-        try:
-            desktop_image_data = create_lineup_image(st.session_state.selected_lineup, team_name, mobile_optimized=False)
             st.download_button(
-                label="🖥️ Desktop Friendly",
-                data=desktop_image_data,
-                file_name=f"MHTTF_Lineup_{team_name}_Desktop.png",
+                label="📸 Download Lineup Image",
+                data=image_data,
+                file_name=f"MHTTF_Lineup_{team_name}.png",
                 mime="image/png",
-                help="High-resolution image perfect for desktop viewing and printing"
+                type="primary",
+                help="Download high-quality lineup image"
             )
-        except Exception as e:
-            st.error(f"Error creating desktop image: {str(e)}")
+        else:
+            st.info("🎾 Select players to enable download")
+    except Exception as e:
+        st.error(f"Error creating image: {str(e)}")
     
     st.divider()
     
