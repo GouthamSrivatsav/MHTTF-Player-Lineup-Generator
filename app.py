@@ -262,21 +262,35 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
     print(f"DEBUG - team_name: {team_name}")
     print(f"DEBUG - mobile_optimized: {mobile_optimized}")
     
-    # IMMEDIATE HARDCODE TEST - skip all processing
-    print("DEBUG - Using IMMEDIATE hardcoded data bypass!")
-    test_rounds = ['S1', 'S2', 'S3', 'D1', 'D2', 'D3', 'D4', 'D5']
-    test_players = [
-        'HARDCODE John Smith', 
-        'HARDCODE Jane Doe', 
-        'HARDCODE Bob Wilson', 
-        'HARDCODE Alice Cooper /<br>Mike Johnson', 
-        'HARDCODE Sarah Brown /<br>Tom Davis', 
-        'HARDCODE Lisa Wang /<br>Chris Lee', 
-        'HARDCODE Emma Stone /<br>Ryan Adams', 
-        'HARDCODE Kate Miller /<br>Jack White'
-    ]
-    
     try:
+        # Process real data now that we know Plotly works
+        rounds_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
+        lineup_data = []
+        
+        print("DEBUG - Processing REAL data")
+        print("DEBUG - Input selected_lineup:", selected_lineup)
+        
+        for round_name in rounds_order:
+            if round_name in selected_lineup:
+                selection = selected_lineup[round_name]
+                print(f"DEBUG - {round_name}: raw selection = {selection} (type: {type(selection)})")
+                # Use the existing format_player_names function with Plotly flag
+                player_text = format_player_names(selection, for_plotly=True)
+                print(f"DEBUG - {round_name}: formatted = '{player_text}'")
+            else:
+                player_text = "Not selected"
+                print(f"DEBUG - {round_name}: Not selected")
+            lineup_data.append([round_name, player_text])
+        
+        print("DEBUG - Full lineup_data:", lineup_data)
+        
+        # Extract data into explicit lists
+        final_rounds = [row[0] for row in lineup_data]
+        final_players = [row[1] for row in lineup_data]
+        
+        print("DEBUG - REAL final_rounds:", final_rounds)
+        print("DEBUG - REAL final_players:", final_players)
+        
         # Mobile vs Desktop settings
         if mobile_optimized:
             # Mobile-optimized settings
@@ -294,13 +308,6 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
             cell_font_size = 24
             cell_height = 70
             title_margin = 100
-        
-        # DIRECT HARDCODE TO PLOTLY
-        final_rounds = test_rounds
-        final_players = test_players
-        
-        print("DEBUG - IMMEDIATE hardcode rounds:", final_rounds)
-        print("DEBUG - IMMEDIATE hardcode players:", final_players)
         
         # Create Plotly table with taller cells for wrapped text
         # Increase cell height for wrapped text
@@ -327,7 +334,7 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
         # Update layout with explicit width control and better sizing
         fig.update_layout(
             title=dict(
-                text=f"<b>HARDCODE Team: {team_name}</b>",
+                text=f"<b>Team: {team_name}</b>",
                 x=0.5,
                 y=0.95,
                 xanchor='center',
@@ -623,9 +630,14 @@ with col1:
 
 with col2:
     # Download button with on-demand image generation
-    @st.cache_data
+    # @st.cache_data  # TEMPORARILY DISABLED FOR DEBUGGING
     def generate_lineup_image(selected_lineup_dict, team_name_str):
-        return create_lineup_image(selected_lineup_dict, team_name_str, mobile_optimized=False)
+        print("DEBUG - generate_lineup_image called!")
+        print(f"DEBUG - selected_lineup_dict: {selected_lineup_dict}")
+        print(f"DEBUG - team_name_str: {team_name_str}")
+        result = create_lineup_image(selected_lineup_dict, team_name_str, mobile_optimized=False)
+        print(f"DEBUG - create_lineup_image returned {len(result) if result else 0} bytes")
+        return result
     
     try:
         # Only generate image when there are selections
