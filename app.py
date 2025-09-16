@@ -279,8 +279,7 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
             img_bytes = pio.to_image(fig, format='png', width=width, height=height, scale=2)
             return img_bytes
         except Exception as plotly_error:
-            # If plotly fails, use matplotlib fallback
-            st.info("Using matplotlib fallback for better compatibility")
+            # If plotly fails, use matplotlib fallback silently
             raise Exception(f"Plotly export failed: {plotly_error}")
         
     except Exception as e:
@@ -365,7 +364,7 @@ def create_matplotlib_table(selected_lineup, team_name, mobile_optimized=False):
     # Save to bytes
     img_buffer = io.BytesIO()
     plt.savefig(img_buffer, format='png', bbox_inches='tight', 
-                facecolor='#FFF8DC', dpi=dpi, quality=100)
+                facecolor='#FFF8DC', dpi=dpi)
     plt.close()
     img_buffer.seek(0)
     
