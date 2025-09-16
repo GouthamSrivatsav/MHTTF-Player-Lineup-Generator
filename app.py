@@ -5,6 +5,43 @@ import itertools
 # Configure Streamlit page layout for full screen width
 st.set_page_config(page_title="MHTTF Village League Tennis Lineup Generator", layout="wide")
 
+# Password protection
+def check_password():
+    """Returns True if the user has entered the correct password."""
+    
+    def password_entered():
+        """Checks whether the password entered by the user is correct."""
+        if st.session_state["password"] == "raghu_bethany_2025":
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Don't store the password
+        else:
+            st.session_state["password_correct"] = False
+
+    # Return True if password is validated
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Show input for password
+    st.title("🔐 MHTTF Village League Tennis Lineup Generator")
+    st.markdown("### Please enter the password to access the application")
+    
+    st.text_input(
+        "Password", 
+        type="password", 
+        on_change=password_entered, 
+        key="password",
+        placeholder="Enter password..."
+    )
+    
+    if "password_correct" in st.session_state and not st.session_state["password_correct"]:
+        st.error("❌ Incorrect password. Please try again.")
+    
+    return False
+
+# Check password before showing the app
+if not check_password():
+    st.stop()
+
 # Add custom CSS for sticky sidebar
 st.markdown("""
 <style>
