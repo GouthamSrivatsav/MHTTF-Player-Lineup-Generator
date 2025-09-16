@@ -256,59 +256,70 @@ def create_html_table(selected_lineup, team_name, mobile_optimized=False):
     <head>
         <meta charset="utf-8">
         <style>
+            * {{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }}
             body {{
                 margin: 0;
                 padding: 40px;
-                background-color: #FFF8DC;
+                background-color: #FFF8DC !important;
                 font-family: 'Arial', sans-serif;
                 width: {container_width};
-                box-sizing: border-box;
+                min-height: 100vh;
             }}
             .container {{
                 width: 100%;
-                background-color: #FFF8DC;
+                background-color: #FFF8DC !important;
+                position: relative;
             }}
             h1 {{
                 text-align: center;
                 font-size: {title_font_size};
                 font-weight: bold;
-                color: #000;
+                color: #000 !important;
                 margin: 0 0 30px 0;
+                background: transparent !important;
             }}
             table {{
                 width: 100%;
                 border-collapse: collapse;
-                background-color: #FFA07A;
+                background-color: #FFA07A !important;
                 border: 3px solid #006064;
                 font-size: {table_font_size};
                 font-weight: bold;
+                table-layout: fixed;
             }}
-            th {{
-                background-color: #FFA07A;
-                color: #000;
+            thead th {{
+                background-color: #FFA07A !important;
+                color: #000 !important;
                 padding: {cell_padding};
                 text-align: left;
                 border: 2px solid #006064;
                 font-weight: bold;
             }}
-            td {{
+            tbody td {{
+                background-color: #FFA07A !important;
                 padding: {cell_padding};
                 border: 2px solid #006064;
-                color: #000;
+                color: #000 !important;
                 font-weight: bold;
                 line-height: 1.4;
                 white-space: pre-wrap;
                 word-wrap: break-word;
-                height: {row_height};
                 vertical-align: middle;
+                overflow: hidden;
             }}
             .round-col {{
-                width: 15%;
-                text-align: center;
+                width: 15% !important;
+                text-align: center !important;
+                background-color: #FFA07A !important;
             }}
             .player-col {{
-                width: 85%;
-                text-align: left;
+                width: 85% !important;
+                text-align: left !important;
+                background-color: #FFA07A !important;
             }}
         </style>
     </head>
@@ -367,29 +378,43 @@ def create_html_screenshot(selected_lineup, team_name, mobile_optimized=False):
     if not PLAYWRIGHT_AVAILABLE:
         raise Exception("Playwright not available")
     
-    html_content = create_html_table(selected_lineup, team_name, mobile_optimized)
+    # Create a clean copy of selected_lineup to avoid mutation issues
+    clean_lineup = dict(selected_lineup)
+    
+    html_content = create_html_table(clean_lineup, team_name, mobile_optimized)
     
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        # Launch browser with specific settings for cloud compatibility
+        browser = p.chromium.launch(
+            headless=True,
+            args=[
+                '--no-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-web-security',
+                '--disable-background-networking'
+            ]
+        )
         page = browser.new_page()
         
-        # Set viewport size
+        # Set viewport size with device scale factor
         if mobile_optimized:
             page.set_viewport_size({"width": 900, "height": 1200})
         else:
-            page.set_viewport_size({"width": 1100, "height": 1400})
+            page.set_viewport_size({"width": 1200, "height": 1600})
         
-        # Load HTML content
-        page.set_content(html_content)
+        # Load HTML content with wait for load state
+        page.set_content(html_content, wait_until='domcontentloaded')
         
-        # Wait for fonts to load
-        page.wait_for_timeout(1000)
+        # Wait longer for rendering to stabilize
+        page.wait_for_timeout(2000)
         
-        # Take screenshot
+        # Take screenshot with better settings
         screenshot_bytes = page.screenshot(
             type='png',
-            full_page=True,
-            clip=None
+            full_page=False,  # Use viewport size instead
+            clip={"x": 0, "y": 0, "width": 900 if mobile_optimized else 1200, "height": 1200 if mobile_optimized else 1600},
+            omit_background=False
         )
         
         browser.close()
