@@ -185,16 +185,15 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
     """Create lineup image optimized for mobile or desktop/print"""
     
     if mobile_optimized:
-        # Mobile-optimized: 3x DPR scaling for modern phones (iPhone 3x, Android 2-3x)
-        # Target display: 600x1400 CSS pixels → Create at 1800x4200 actual pixels
-        width, height = 1800, 4200
-        title_size, header_size, text_size = 240, 195, 165  # 3x larger fonts
-        table_x, table_y = 60, 540  # 3x positions
-        table_width = width - 120
-        row_height = 330  # 3x row height
-        col1_width = 300  # 3x column width
-        text_padding_x, text_padding_y = 60, 90  # 3x padding
-        title_y = 360  # 3x title position
+        # Mobile-optimized: Simple, direct approach with HUGE fonts
+        width, height = 800, 1600
+        title_size, header_size, text_size = 120, 100, 85  # MASSIVE fonts
+        table_x, table_y = 30, 200
+        table_width = width - 60
+        row_height = 140  # Very tall rows
+        col1_width = 120
+        text_padding_x, text_padding_y = 25, 35
+        title_y = 150
     else:
         # Desktop/Print optimized: Large image with professional layout
         width, height = 1200, 1600
@@ -308,8 +307,8 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
     img_buffer = io.BytesIO()
     
     if mobile_optimized:
-        # Save with maximum quality for mobile with high DPI for retina displays
-        img.save(img_buffer, format='PNG', quality=100, optimize=True, dpi=(450, 450))
+        # Save with maximum quality for mobile - simple approach
+        img.save(img_buffer, format='PNG', quality=100, optimize=False)
     else:
         img.save(img_buffer, format='PNG', quality=95, dpi=(300, 300))
     
