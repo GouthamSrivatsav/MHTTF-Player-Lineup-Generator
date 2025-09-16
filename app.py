@@ -604,29 +604,66 @@ with col1:
         # Create collapsible expander for each round (closed by default)
         # Show selection info in title if selected
         with st.expander(f"{round_name}{title_suffix}", expanded=False):
-            # Show clear button at the top if there's a selection
+            # Show current selection if there's one
             if round_name in st.session_state.selected_lineup:
                 selected = st.session_state.selected_lineup[round_name]
                 selected_text = format_player_names(selected)
                 
-                # Create columns for current selection and clear button at the top
-                top_col1, top_col2 = st.columns([3, 1])
-                with top_col1:
-                    st.success(f"Current: {selected_text}")
-                with top_col2:
-                    if st.button("❌ Clear", key=f"top_clear_{round_name}", help="Clear selection"):
-                        del st.session_state.selected_lineup[round_name]
-                        st.rerun()
-                
+                st.success(f"Current: {selected_text}")
                 st.divider()  # Separator between current selection and options
             
             # Get available options for this round
             available_options = [opt for opt in candidates[round_name] if is_available(opt)]
             
+            # Add search functionality only for doubles rounds (D1, D2, D3, D4, D5)
+            if round_name.startswith('D'):
+                search_key = f"search_{round_name}"
+                clear_key = f"clear_{round_name}"
+                
+                # Check if clear was clicked
+                if clear_key in st.session_state and st.session_state[clear_key]:
+                    # Reset the clear flag and initialize empty search
+                    st.session_state[clear_key] = False
+                    if search_key in st.session_state:
+                        del st.session_state[search_key]
+                
+                # Initialize search term in session state if not exists
+                if search_key not in st.session_state:
+                    st.session_state[search_key] = ""
+                
+                # Search input
+                search_term = st.text_input(
+                    "🔍 Search players:",
+                    key=search_key,
+                    placeholder="Type and press Enter to filter...",
+                    help="Type player name and press Enter to filter results"
+                )
+                
+                # Show clear button only if there's a search term
+                if search_term:
+                    if st.button("🗑️ Clear Search", key=f"clear_search_{round_name}", help="Clear search filter"):
+                        st.session_state[clear_key] = True
+                        st.rerun()
+                
+                # Filter options based on search term
+                if search_term:
+                    filtered_options = []
+                    search_lower = search_term.lower()
+                    for option in available_options:
+                        option_text = format_player_names(option).lower()
+                        if search_lower in option_text:
+                            filtered_options.append(option)
+                    display_options = filtered_options
+                else:
+                    display_options = available_options
+            else:
+                # For singles rounds (S1, S2, S3), no search - show all options
+                display_options = available_options
+            
             # Create buttons for each option (only if there are available options)
-            if available_options:
-                cols = st.columns(min(4, len(available_options)))
-                for i, option in enumerate(available_options):
+            if display_options:
+                cols = st.columns(min(4, len(display_options)))
+                for i, option in enumerate(display_options):
                     col_idx = i % 4
                     with cols[col_idx]:
                         option_text = format_player_names(option)
