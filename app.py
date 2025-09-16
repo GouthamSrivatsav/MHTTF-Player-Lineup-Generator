@@ -187,14 +187,14 @@ col1, col2 = st.columns([2, 1])
 with col1:
     # Display each round with selectable options
     rounds_info = {
-            "S1": "Singles 1 (Rating = 4.0 or 4.5)",
-            "S2": "Singles 2 (Rating = 3.0 or 3.5)", 
-            "S3": "Singles 3 (Rating = 3.0 only)",
-            "D1": "Doubles 1 (Combined Rating = 8.0 or 8.5)",
-            "D2": "Doubles 2 (Combined Rating = 7.0 or 7.5)",
-            "D3": "Doubles 3 (Combined Rating = 7.0 or 7.5)",
-            "D4": "Doubles 4 (Combined Rating = 6.0 or 6.5)",
-            "D5": "Doubles 5 (Combined Rating = 6.0 or 6.5)"
+        "S1": "S1",
+        "S2": "S2", 
+        "S3": "S3",
+        "D1": "D1",
+        "D2": "D2",
+        "D3": "D3",
+        "D4": "D4",
+        "D5": "D5"
     }
     
     for round_name, round_desc in rounds_info.items():
@@ -203,11 +203,12 @@ with col1:
         if round_name in st.session_state.selected_lineup:
             selected = st.session_state.selected_lineup[round_name]
             selected_text = format_player_names(selected)
-            title_suffix = f" ✅ {selected_text}"
+            # Use non-breaking spaces for visible separation
+            title_suffix = f"\u00A0\u00A0✅ {selected_text}"
         
         # Create collapsible expander for each round (closed by default)
         # Show selection info in title if selected
-        with st.expander(f"{round_name}: {round_desc}{title_suffix}", expanded=False):
+        with st.expander(f"{round_name}{title_suffix}", expanded=False):
             # Show clear button at the top if there's a selection
             if round_name in st.session_state.selected_lineup:
                 selected = st.session_state.selected_lineup[round_name]
