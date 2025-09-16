@@ -88,14 +88,14 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
         # Mobile vs Desktop settings
         if mobile_optimized:
             width, height = 600, 1200  # Increased height for title space
-            title_font_size = 28
+            title_font_size = 24  # Reduced from 28
             header_font_size = 22
             cell_font_size = 20
             cell_height = 60
             title_margin = 80
         else:
             width, height = 900, 1400  # Increased height for title space
-            title_font_size = 36
+            title_font_size = 30  # Reduced from 36
             header_font_size = 28
             cell_font_size = 24
             cell_height = 70
