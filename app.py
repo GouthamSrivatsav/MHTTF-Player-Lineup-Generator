@@ -233,12 +233,23 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
         for round_name in rounds_order:
             if round_name in selected_lineup:
                 selection = selected_lineup[round_name]
-                player_text = format_player_names(selection, for_plotly=True)
+                # For Plotly, use \n instead of <br> for better HTML handling
+                if isinstance(selection, tuple) and len(selection) >= 2:
+                    combined = " / ".join(selection)
+                    if len(combined) > 20:  # Same threshold
+                        player_text = f"{selection[0]} /\n{selection[1]}"  # Use \n for HTML pre-wrap
+                    else:
+                        player_text = combined
+                else:
+                    player_text = format_player_names(selection)
             else:
                 player_text = "Not selected"
             lineup_data.append([round_name, player_text])
         
         df = pd.DataFrame(lineup_data, columns=["Round", "Player(s)"])
+        
+        # Apply HTML styling with pre-wrap to handle newlines
+        df["Player(s)"] = df["Player(s)"].apply(lambda x: f"<span style='white-space:pre-wrap'>{x}</span>")
         
         # Mobile vs Desktop settings
         if mobile_optimized:
