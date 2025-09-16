@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import itertools
+from PIL import Image, ImageDraw, ImageFont
+import io
 
 # Configure Streamlit page layout for full screen width
 st.set_page_config(page_title="MHTTF Village League Tennis Lineup Generator", layout="wide")
@@ -179,6 +181,119 @@ def format_player_names(option):
         return " / ".join(option)
     return option
 
+def create_lineup_image(selected_lineup, team_name):
+    """Create a high-quality table format lineup image"""
+    # High resolution image dimensions for crisp quality
+    width, height = 1200, 1600
+    background_color = (255, 248, 220)  # Cornsilk (Cream) background
+    table_bg_color = (255, 160, 122)  # Light Salmon table background
+    header_bg_color = (255, 160, 122)  # Light Salmon header (matching table)
+    text_color = (0, 0, 0)  # Bold black text
+    header_text_color = (0, 0, 0)  # Bold black header text
+    border_color = (0, 100, 200)  # Dark blue borders
+    
+    # Create high-resolution image
+    img = Image.new('RGB', (width, height), background_color)
+    draw = ImageDraw.Draw(img)
+    
+    # Font options available (in order of preference):
+    # 1. Helvetica Bold - Clean, professional
+    # 2. Arial Bold - Similar to Helvetica
+    # 3. Times New Roman Bold - Classic serif
+    # 4. Verdana Bold - Web-friendly sans-serif
+    # 5. Georgia Bold - Readable serif
+    # 6. Tahoma Bold - Compact sans-serif
+    
+    # Use much larger fonts for crisp quality with bold styling
+    try:
+        # Try Helvetica Bold first (accessing the bold variant)
+        title_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 60, index=1)  # Bold variant
+        header_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 36, index=1) # Bold variant
+        text_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 32, index=1)   # Bold variant
+    except:
+        try:
+            # Try Helvetica regular (without bold)
+            title_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 60)
+            header_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 36)
+            text_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 32)
+        except:
+            try:
+                # Try Arial Bold
+                title_font = ImageFont.truetype("arialbd.ttf", 60)
+                header_font = ImageFont.truetype("arialbd.ttf", 36)
+                text_font = ImageFont.truetype("arialbd.ttf", 32)
+            except:
+                try:
+                    # Try regular Arial
+                    title_font = ImageFont.truetype("arial.ttf", 60)
+                    header_font = ImageFont.truetype("arial.ttf", 36)
+                    text_font = ImageFont.truetype("arial.ttf", 32)
+                except:
+                    # Fallback to default
+                    title_font = ImageFont.load_default()
+                    header_font = ImageFont.load_default()
+                    text_font = ImageFont.load_default()
+    
+    # Draw only team name as heading
+    team_text = f"Team: {team_name}"
+    team_bbox = draw.textbbox((0, 0), team_text, font=title_font)
+    team_width = team_bbox[2] - team_bbox[0]
+    draw.text(((width - team_width) // 2, 150), team_text, fill=(0, 0, 0), font=title_font)
+    
+    # Table dimensions
+    table_x = 100
+    table_y = 320
+    table_width = width - 200
+    row_height = 120
+    col1_width = 200  # Round column
+    col2_width = table_width - col1_width  # Player column
+    
+    # Draw table background
+    table_height = row_height * 9  # 8 data rows + 1 header
+    draw.rectangle([table_x, table_y, table_x + table_width, table_y + table_height], 
+                   fill=table_bg_color, outline=border_color, width=4)
+    
+    # Draw header row
+    draw.rectangle([table_x, table_y, table_x + table_width, table_y + row_height], 
+                   fill=header_bg_color, outline=border_color, width=4)
+    
+    # Header text
+    draw.text((table_x + 30, table_y + 35), "Round", fill=header_text_color, font=header_font)
+    draw.text((table_x + col1_width + 30, table_y + 35), "Player(s)", fill=header_text_color, font=header_font)
+    
+    # Draw column separator line
+    draw.line([table_x + col1_width, table_y, table_x + col1_width, table_y + table_height], 
+              fill=border_color, width=4)
+    
+    # Draw data rows
+    round_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
+    
+    for i, round_name in enumerate(round_order):
+        row_y = table_y + row_height * (i + 1)
+        
+        # Draw horizontal line
+        draw.line([table_x, row_y, table_x + table_width, row_y], 
+                  fill=border_color, width=2)
+        
+        # Round name
+        draw.text((table_x + 30, row_y + 40), round_name, fill=text_color, font=text_font)
+        
+        # Player name(s)
+        if round_name in selected_lineup:
+            selection = selected_lineup[round_name]
+            player_text = format_player_names(selection)
+            draw.text((table_x + col1_width + 30, row_y + 40), player_text, fill=text_color, font=text_font)
+        else:
+            draw.text((table_x + col1_width + 30, row_y + 40), "Not selected", 
+                     fill=(150, 150, 150), font=text_font)
+    
+    # Convert to bytes for download
+    img_buffer = io.BytesIO()
+    img.save(img_buffer, format='PNG', quality=95, dpi=(300, 300))
+    img_buffer.seek(0)
+    
+    return img_buffer.getvalue()
+
 st.header("Select Players for Each Round")
 
 # Create columns for better layout
@@ -259,6 +374,21 @@ with col1:
         
 
 with col2:
+    # Download lineup as image button - direct download
+    try:
+        image_data = create_lineup_image(st.session_state.selected_lineup, team_name)
+        st.download_button(
+            label="📸 Download Lineup Image",
+            data=image_data,
+            file_name=f"MHTTF_Lineup_{team_name}.png",
+            mime="image/png",
+            type="primary"
+        )
+    except Exception as e:
+        st.error(f"Error creating image: {str(e)}")
+    
+    st.divider()
+    
     # Reset button
     if st.button("🔄 Reset All Selections", type="secondary"):
         st.session_state.selected_lineup = {}
