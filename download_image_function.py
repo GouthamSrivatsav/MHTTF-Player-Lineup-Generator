@@ -142,7 +142,7 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
             title=dict(
                 text=f"<b>Team: {team_name}</b>",
                 x=0.5,
-                y=0.95,
+                y=0.98,  # Move title higher
                 xanchor='center',
                 yanchor='top',
                 font=dict(size=title_font_size, color='black', family="Arial Black")
@@ -150,7 +150,7 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
             autosize=False,
             width=1000 if not mobile_optimized else 800,
             height=height,
-            margin=dict(l=50, r=50, t=title_margin, b=50),
+            margin=dict(l=50, r=50, t=title_margin + 20, b=50),  # Increase top margin
             paper_bgcolor='#FFF8DC',  # Cornsilk background
             plot_bgcolor='#FFF8DC',   # Cornsilk background
             font_family="Arial"
