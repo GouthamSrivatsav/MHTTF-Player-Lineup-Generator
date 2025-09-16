@@ -150,7 +150,7 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
             autosize=False,
             width=1000 if not mobile_optimized else 800,
             height=height,
-            margin=dict(l=50, r=50, t=150, b=50),  # Much larger top margin for title space
+            margin=dict(l=50, r=50, t=200, b=50),  # Even larger top margin for cloud compatibility
             paper_bgcolor='#FFF8DC',  # Cornsilk background
             plot_bgcolor='#FFF8DC',   # Cornsilk background
             font_family="Arial"
