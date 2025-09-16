@@ -204,7 +204,7 @@ with col1:
             selected = st.session_state.selected_lineup[round_name]
             selected_text = format_player_names(selected)
             # Use non-breaking spaces for visible separation
-            title_suffix = f"\u00A0\u00A0✅ {selected_text}"
+            title_suffix = f"\u00A0\u00A0\u00A0\u00A0✅ {selected_text}"
         
         # Create collapsible expander for each round (closed by default)
         # Show selection info in title if selected
@@ -259,46 +259,6 @@ with col1:
         
 
 with col2:
-    st.header("Current Lineup")
-    
-    if st.session_state.selected_lineup:
-        st.subheader("Selected Players:")
-        # Define the correct order for displaying rounds
-        round_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
-        
-        # Display rounds in the correct order
-        for round_name in round_order:
-            if round_name in st.session_state.selected_lineup:
-                selection = st.session_state.selected_lineup[round_name]
-                selection_text = format_player_names(selection)
-                st.write(f"**{round_name}:** {selection_text}")
-        
-        # Show completion status
-        total_rounds = len(rounds_info)
-        completed_rounds = len(st.session_state.selected_lineup)
-        st.progress(completed_rounds / total_rounds)
-        st.write(f"Progress: {completed_rounds}/{total_rounds} rounds completed")
-        
-        if completed_rounds == total_rounds:
-            st.success("🎉 Lineup Complete!")
-            
-            # Create downloadable lineup in correct order
-            final_lineup = {}
-            for round_name in round_order:
-                if round_name in st.session_state.selected_lineup:
-                    selection = st.session_state.selected_lineup[round_name]
-                    final_lineup[round_name] = format_player_names(selection)
-            lineup_df = pd.DataFrame([final_lineup])
-            csv_data = lineup_df.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                "Download Lineup as CSV", 
-                csv_data, 
-                "selected_lineup.csv",
-                mime="text/csv"
-            )
-    else:
-        st.info("No players selected yet. Click on players in each round to build your lineup.")
-    
     # Reset button
     if st.button("🔄 Reset All Selections", type="secondary"):
         st.session_state.selected_lineup = {}
