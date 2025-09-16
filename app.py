@@ -298,14 +298,19 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
             font_family="Arial"
         )
         
-        # Try plotly export with simplified approach
+        # Try plotly export with cloud-friendly settings
         try:
-            # Try without specifying engine (let plotly decide)
-            img_bytes = pio.to_image(fig, format='png', width=width, height=height, scale=2)
+            # Try with different scale settings for cloud compatibility
+            img_bytes = pio.to_image(fig, format='png', width=width, height=height, scale=1)
             return img_bytes
         except Exception as plotly_error:
-            # If plotly fails, use matplotlib fallback silently
-            raise Exception(f"Plotly export failed: {plotly_error}")
+            try:
+                # Fallback: try without scale parameter
+                img_bytes = pio.to_image(fig, format='png', width=width, height=height)
+                return img_bytes
+            except Exception as plotly_error2:
+                # If plotly fails completely, use matplotlib fallback
+                raise Exception(f"Plotly export failed: {plotly_error2}")
         
     except Exception as e:
         # Try matplotlib fallback if available
