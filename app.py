@@ -249,14 +249,21 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
         rounds_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
         lineup_data = []
         
+        print("DEBUG - Input selected_lineup:", selected_lineup)
+        
         for round_name in rounds_order:
             if round_name in selected_lineup:
                 selection = selected_lineup[round_name]
+                print(f"DEBUG - {round_name}: raw selection = {selection} (type: {type(selection)})")
                 # Use the existing format_player_names function with Plotly flag
                 player_text = format_player_names(selection, for_plotly=True)
+                print(f"DEBUG - {round_name}: formatted = '{player_text}'")
             else:
                 player_text = "Not selected"
+                print(f"DEBUG - {round_name}: Not selected")
             lineup_data.append([round_name, player_text])
+        
+        print("DEBUG - Full lineup_data:", lineup_data)
         
         # Extract data into explicit lists to avoid DataFrame indexing issues
         round_names = [row[0] for row in lineup_data]
@@ -265,6 +272,10 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
         # Debug: verify data structure
         print("DEBUG - Round names:", round_names)
         print("DEBUG - Player names:", player_names)
+        
+        # Verify each pair individually
+        for i, (round_name, player_name) in enumerate(zip(round_names, player_names)):
+            print(f"DEBUG - Row {i}: {round_name} -> '{player_name}'")
         
         # Mobile vs Desktop settings
         if mobile_optimized:
@@ -284,9 +295,32 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
             cell_height = 70
             title_margin = 100
         
+        # TEST: Create hardcoded data to isolate the issue
+        test_rounds = ['S1', 'S2', 'S3', 'D1', 'D2', 'D3', 'D4', 'D5']
+        test_players = [
+            'John Smith', 
+            'Jane Doe', 
+            'Bob Wilson', 
+            'Alice Cooper /<br>Mike Johnson', 
+            'Sarah Brown /<br>Tom Davis', 
+            'Lisa Wang /<br>Chris Lee', 
+            'Emma Stone /<br>Ryan Adams', 
+            'Kate Miller /<br>Jack White'
+        ]
+        
+        print("DEBUG - TEST hardcoded rounds:", test_rounds)
+        print("DEBUG - TEST hardcoded players:", test_players)
+        
+        # Use hardcoded data for now to test if issue is in data or Plotly
+        final_rounds = test_rounds
+        final_players = test_players
+        
+        print("DEBUG - FINAL rounds going to Plotly:", final_rounds)
+        print("DEBUG - FINAL players going to Plotly:", final_players)
+        
         # Create Plotly table with taller cells for wrapped text
         # Increase cell height for wrapped text
-        wrapped_cell_height = cell_height * 1.5 if any('<br>' in str(text) for text in player_names) else cell_height
+        wrapped_cell_height = cell_height * 1.5 if any('<br>' in str(text) for text in final_players) else cell_height
         
         fig = go.Figure(data=[go.Table(
             columnwidth=[100, 400],
@@ -298,7 +332,7 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
                 height=cell_height
             ),
             cells=dict(
-                values=[round_names, player_names],  # Use explicit lists
+                values=[final_rounds, final_players],  # Use explicit hardcoded lists
                 fill_color='#FFA07A',  # Light Salmon
                 align=['center', 'left'],
                 font=dict(color='black', size=cell_font_size, family="Arial"),
@@ -328,7 +362,7 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
         # Update traces with taller rows and explicit column values
         fig.update_traces(
             cells=dict(
-                values=[round_names, player_names],  # Use explicit lists
+                values=[final_rounds, final_players],  # Use hardcoded test data
                 height=50 if not mobile_optimized else 60,  # Taller rows for wrapped text
                 fill_color='#FFA07A',  # Light Salmon
                 align=['center', 'left'],
