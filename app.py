@@ -19,10 +19,11 @@ except ImportError:
     MATPLOTLIB_AVAILABLE = False
 
 try:
-    from playwright.sync_api import sync_playwright
-    PLAYWRIGHT_AVAILABLE = True
+    import pyppeteer
+    import asyncio
+    PYPPETEER_AVAILABLE = True
 except ImportError:
-    PLAYWRIGHT_AVAILABLE = False
+    PYPPETEER_AVAILABLE = False
 
 # Configure Streamlit page layout for full screen width
 st.set_page_config(page_title="MHTTF Village League Tennis Lineup Generator", layout="wide")
@@ -414,10 +415,27 @@ def create_html_screenshot(selected_lineup, team_name, mobile_optimized=False):
         return screenshot_bytes
 
 def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
-    """Create lineup image - simplified approach focused on reliability"""
+    """Create lineup image with Plotly + pyppeteer for cloud compatibility"""
     
-    # Skip HTML screenshot for now - too many issues in cloud
-    # Go directly to matplotlib with very wide tables to prevent cropping
+    # Try Plotly first with pyppeteer for cloud Chromium support
+    if PLOTLY_AVAILABLE:
+        try:
+            # Initialize pyppeteer for cloud Chromium support
+            if PYPPETEER_AVAILABLE:
+                try:
+                    # This ensures Chromium is available for Kaleido in cloud
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(pyppeteer.launch())
+                    loop.close()
+                except Exception as pyp_error:
+                    print(f"Pyppeteer initialization failed: {pyp_error}")
+            
+            return create_plotly_table_image(selected_lineup, team_name, mobile_optimized)
+        except Exception as plotly_error:
+            print(f"Plotly failed: {plotly_error}")
+    
+    # Fallback to matplotlib
     if MATPLOTLIB_AVAILABLE:
         try:
             return create_matplotlib_table(selected_lineup, team_name, mobile_optimized)
@@ -426,6 +444,9 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
     
     # Final fallback to PIL
     return create_simple_pil_fallback(selected_lineup, team_name, mobile_optimized)
+
+def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False):
+    """Create Plotly table with proper <br> tag support"""
     
     try:
         # Create DataFrame for the lineup
@@ -435,11 +456,11 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
         for round_name in rounds_order:
             if round_name in selected_lineup:
                 selection = selected_lineup[round_name]
-                # For Plotly, use \n instead of <br> for better HTML handling
+                # For Plotly with pyppeteer, use <br> tags for line breaks
                 if isinstance(selection, tuple) and len(selection) >= 2:
                     combined = " / ".join(selection)
                     if len(combined) > 20:  # Same threshold
-                        player_text = f"{selection[0]} /\n{selection[1]}"  # Use \n for HTML pre-wrap
+                        player_text = f"{selection[0]} /<br>{selection[1]}"  # Use <br> for Plotly
                     else:
                         player_text = combined
                 else:
@@ -449,9 +470,6 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
             lineup_data.append([round_name, player_text])
         
         df = pd.DataFrame(lineup_data, columns=["Round", "Player(s)"])
-        
-        # Apply HTML styling with pre-wrap to handle newlines
-        df["Player(s)"] = df["Player(s)"].apply(lambda x: f"<span style='white-space:pre-wrap'>{x}</span>")
         
         # Mobile vs Desktop settings
         if mobile_optimized:
