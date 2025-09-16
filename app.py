@@ -258,7 +258,13 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
                 player_text = "Not selected"
             lineup_data.append([round_name, player_text])
         
-        df = pd.DataFrame(lineup_data, columns=["Round", "Player(s)"])
+        # Extract data into explicit lists to avoid DataFrame indexing issues
+        round_names = [row[0] for row in lineup_data]
+        player_names = [row[1] for row in lineup_data]
+        
+        # Debug: verify data structure
+        print("DEBUG - Round names:", round_names)
+        print("DEBUG - Player names:", player_names)
         
         # Mobile vs Desktop settings
         if mobile_optimized:
@@ -280,7 +286,7 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
         
         # Create Plotly table with taller cells for wrapped text
         # Increase cell height for wrapped text
-        wrapped_cell_height = cell_height * 1.5 if any('<br>' in str(text) for text in df['Player(s)']) else cell_height
+        wrapped_cell_height = cell_height * 1.5 if any('<br>' in str(text) for text in player_names) else cell_height
         
         fig = go.Figure(data=[go.Table(
             columnwidth=[100, 400],
@@ -292,7 +298,7 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
                 height=cell_height
             ),
             cells=dict(
-                values=[df['Round'], df['Player(s)']],
+                values=[round_names, player_names],  # Use explicit lists
                 fill_color='#FFA07A',  # Light Salmon
                 align=['center', 'left'],
                 font=dict(color='black', size=cell_font_size, family="Arial"),
@@ -322,7 +328,7 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
         # Update traces with taller rows and explicit column values
         fig.update_traces(
             cells=dict(
-                values=[df['Round'], df['Player(s)']],
+                values=[round_names, player_names],  # Use explicit lists
                 height=50 if not mobile_optimized else 60,  # Taller rows for wrapped text
                 fill_color='#FFA07A',  # Light Salmon
                 align=['center', 'left'],
