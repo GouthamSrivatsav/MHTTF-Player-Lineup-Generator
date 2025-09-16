@@ -308,12 +308,13 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
             raise Exception(f"Plotly export failed: {plotly_error}")
         
     except Exception as e:
+        print(f"DEBUG: Plotly failed: {e}")  # Debug output
         # Try matplotlib fallback if available
         if MATPLOTLIB_AVAILABLE:
             try:
                 return create_matplotlib_table(selected_lineup, team_name, mobile_optimized)
             except Exception as mpl_error:
-                st.warning(f"Matplotlib also failed: {mpl_error}")
+                print(f"DEBUG: Matplotlib also failed: {mpl_error}")
         
         # Final fallback to enhanced PIL
         return create_simple_pil_fallback(selected_lineup, team_name, mobile_optimized)
@@ -329,12 +330,20 @@ def create_matplotlib_table(selected_lineup, team_name, mobile_optimized=False):
     for round_name in rounds_order:
         if round_name in selected_lineup:
             selection = selected_lineup[round_name]
-            player_text = format_player_names(selection)
+            # Use matplotlib-compatible line breaks for long text
+            if isinstance(selection, tuple) and len(selection) >= 2:
+                combined = " / ".join(selection)
+                if len(combined) > 20:  # Same threshold as Plotly
+                    player_text = f"{selection[0]} /\n{selection[1]}"  # Use \n for matplotlib
+                else:
+                    player_text = combined
+            else:
+                player_text = format_player_names(selection)
         else:
             player_text = "Not selected"
         lineup_data.append([round_name, player_text])
         # Track the longest player text
-        max_player_text_length = max(max_player_text_length, len(player_text))
+        max_player_text_length = max(max_player_text_length, len(player_text.replace('\n', '')))  # Don't count newlines in length
         print(f"DEBUG: {round_name}: '{player_text}' ({len(player_text)} chars)")
     
     # Calculate dynamic column widths based on content - more aggressive
@@ -398,17 +407,19 @@ def create_matplotlib_table(selected_lineup, team_name, mobile_optimized=False):
         table[(0, i)].set_text_props(weight='bold', color='black')
         table[(0, i)].set_height(0.08)
     
-    # Style data cells
+    # Style data cells with proper newline handling
     for i in range(1, len(lineup_data) + 1):
         for j in range(2):
             table[(i, j)].set_facecolor('#FFA07A')  # Light Salmon
             table[(i, j)].set_text_props(color='black')
             
             # Check if this cell has a newline and adjust height accordingly
-            cell_text = lineup_data[i-1][j]
-            if '\n' in str(cell_text):
-                table[(i, j)].set_height(0.12)  # Taller for multi-line
-                table[(i, j)].set_text_props(va='center')  # Vertically center
+            cell_text = str(lineup_data[i-1][j])
+            if '\n' in cell_text:
+                table[(i, j)].set_height(0.15)  # Much taller for multi-line
+                table[(i, j)].set_text_props(va='center', ha='left')  # Center vertically, left align
+                # Ensure the text is properly set with newlines
+                table[(i, j)].get_text().set_text(cell_text)
             else:
                 table[(i, j)].set_height(0.08)  # Normal height
             
