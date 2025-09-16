@@ -291,7 +291,7 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
             )
         )])
         
-        # Update layout with title and styling
+        # Update layout with explicit width control and better sizing
         fig.update_layout(
             title=dict(
                 text=f"<b>Team: {team_name}</b>",
@@ -301,7 +301,8 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
                 yanchor='top',
                 font=dict(size=title_font_size, color='black', family="Arial Black")
             ),
-            width=width,
+            autosize=False,
+            width=1000 if not mobile_optimized else 800,  # Wider overall table
             height=height,
             margin=dict(l=50, r=50, t=title_margin, b=50),
             paper_bgcolor='#FFF8DC',  # Cornsilk background
@@ -309,15 +310,28 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
             font_family="Arial"
         )
         
+        # Update traces with taller rows and explicit column values
+        fig.update_traces(
+            cells=dict(
+                values=[df['Round'], df['Player(s)']],
+                height=50 if not mobile_optimized else 60,  # Taller rows for wrapped text
+                fill_color='#FFA07A',  # Light Salmon
+                align=['center', 'left'],
+                font=dict(color='black', size=cell_font_size, family="Arial")
+            ),
+            columnwidth=[150, 650] if not mobile_optimized else [120, 520]  # Explicit column widths
+        )
+        
         # Try plotly export with cloud-friendly settings
+        export_width = 1000 if not mobile_optimized else 800  # Match layout width
         try:
             # Try with different scale settings for cloud compatibility
-            img_bytes = pio.to_image(fig, format='png', width=width, height=height, scale=1)
+            img_bytes = pio.to_image(fig, format='png', width=export_width, height=height, scale=1)
             return img_bytes
         except Exception as plotly_error:
             try:
                 # Fallback: try without scale parameter
-                img_bytes = pio.to_image(fig, format='png', width=width, height=height)
+                img_bytes = pio.to_image(fig, format='png', width=export_width, height=height)
                 return img_bytes
             except Exception as plotly_error2:
                 # If plotly fails completely, use matplotlib fallback
