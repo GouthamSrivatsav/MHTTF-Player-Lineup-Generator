@@ -18,12 +18,7 @@ try:
 except ImportError:
     MATPLOTLIB_AVAILABLE = False
 
-try:
-    import pyppeteer
-    import asyncio
-    PYPPETEER_AVAILABLE = True
-except ImportError:
-    PYPPETEER_AVAILABLE = False
+# Simplified approach - no longer using pyppeteer
 
 # Configure Streamlit page layout for full screen width
 st.set_page_config(page_title="MHTTF Village League Tennis Lineup Generator", layout="wide")
@@ -227,22 +222,11 @@ def wrap_long_text(text, max_len=15):
 # HTML approach removed - using Plotly + pyppeteer instead
 
 def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
-    """Create lineup image with Plotly + pyppeteer for cloud compatibility"""
+    """Create lineup image - simplified Plotly approach"""
     
-    # Try Plotly first with pyppeteer for cloud Chromium support
+    # Try Plotly first (simplified approach)
     if PLOTLY_AVAILABLE:
         try:
-            # Initialize pyppeteer for cloud Chromium support
-            if PYPPETEER_AVAILABLE:
-                try:
-                    # This ensures Chromium is available for Kaleido in cloud
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    loop.run_until_complete(pyppeteer.launch())
-                    loop.close()
-                except Exception as pyp_error:
-                    print(f"Pyppeteer initialization failed: {pyp_error}")
-            
             return create_plotly_table_image(selected_lineup, team_name, mobile_optimized)
         except Exception as plotly_error:
             print(f"Plotly failed: {plotly_error}")
@@ -268,15 +252,8 @@ def create_plotly_table_image(selected_lineup, team_name, mobile_optimized=False
         for round_name in rounds_order:
             if round_name in selected_lineup:
                 selection = selected_lineup[round_name]
-                # For Plotly with pyppeteer, use <br> tags for line breaks
-                if isinstance(selection, tuple) and len(selection) >= 2:
-                    combined = " / ".join(selection)
-                    if len(combined) > 20:  # Same threshold
-                        player_text = f"{selection[0]} /<br>{selection[1]}"  # Use <br> for Plotly
-                    else:
-                        player_text = combined
-                else:
-                    player_text = format_player_names(selection)
+                # Use the existing format_player_names function with Plotly flag
+                player_text = format_player_names(selection, for_plotly=True)
             else:
                 player_text = "Not selected"
             lineup_data.append([round_name, player_text])
