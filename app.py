@@ -198,17 +198,16 @@ with col1:
     }
     
     for round_name, round_desc in rounds_info.items():
-        # Show current selection status in the expander label
-        current_selection = ""
+        # Add player info to expander title if selected
+        title_suffix = ""
         if round_name in st.session_state.selected_lineup:
             selected = st.session_state.selected_lineup[round_name]
             selected_text = format_player_names(selected)
-            # Use em-spaces for large visual separation
-            large_space = "\u2003" * 8  # 8 em-spaces for significant visual gap
-            current_selection = f"{large_space}✅ {selected_text}"
+            title_suffix = f" ✅ {selected_text}"
         
         # Create collapsible expander for each round (closed by default)
-        with st.expander(f"{round_name}: {round_desc}{current_selection}", expanded=False):
+        # Show selection info in title if selected
+        with st.expander(f"{round_name}: {round_desc}{title_suffix}", expanded=False):
             # Show clear button at the top if there's a selection
             if round_name in st.session_state.selected_lineup:
                 selected = st.session_state.selected_lineup[round_name]
@@ -256,6 +255,7 @@ with col1:
             # Show status message if no selection
             if round_name not in st.session_state.selected_lineup:
                 st.info("No selection made")
+        
 
 with col2:
     st.header("Current Lineup")
