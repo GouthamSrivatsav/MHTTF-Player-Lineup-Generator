@@ -228,13 +228,6 @@ def create_html_table(selected_lineup, team_name, mobile_optimized=False):
     
     rounds_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
     
-    # Debug: Print the selected lineup to see what we're working with
-    print("DEBUG HTML Table - Selected lineup:")
-    for round_name in rounds_order:
-        if round_name in selected_lineup:
-            print(f"  {round_name}: {selected_lineup[round_name]} (type: {type(selected_lineup[round_name])})")
-        else:
-            print(f"  {round_name}: Not selected")
     
     # Mobile vs desktop styling
     if mobile_optimized:
@@ -421,19 +414,18 @@ def create_html_screenshot(selected_lineup, team_name, mobile_optimized=False):
         return screenshot_bytes
 
 def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
-    """Create lineup image with multiple fallback strategies"""
+    """Create lineup image - simplified approach focused on reliability"""
     
-    # Try HTML screenshot first (best quality and text wrapping)
-    if PLAYWRIGHT_AVAILABLE:
+    # Skip HTML screenshot for now - too many issues in cloud
+    # Go directly to matplotlib with very wide tables to prevent cropping
+    if MATPLOTLIB_AVAILABLE:
         try:
-            return create_html_screenshot(selected_lineup, team_name, mobile_optimized)
-        except Exception as html_error:
-            print(f"HTML screenshot failed: {html_error}")
+            return create_matplotlib_table(selected_lineup, team_name, mobile_optimized)
+        except Exception as mpl_error:
+            print(f"Matplotlib failed: {mpl_error}")
     
-    # Fallback to Plotly if available
-    if not PLOTLY_AVAILABLE:
-        # Fallback to PIL if plotly not available
-        return create_simple_pil_fallback(selected_lineup, team_name, mobile_optimized)
+    # Final fallback to PIL
+    return create_simple_pil_fallback(selected_lineup, team_name, mobile_optimized)
     
     try:
         # Create DataFrame for the lineup
@@ -584,37 +576,23 @@ def create_matplotlib_table(selected_lineup, team_name, mobile_optimized=False):
         # Track the longest player text
         max_player_text_length = max(max_player_text_length, len(player_text.replace('\n', '')))  # Don't count newlines in length
     
-    # Calculate dynamic column widths based on content - more aggressive
-    if max_player_text_length > 25:  # Long text detected
-        round_col_width = 0.12  # Much narrower round column
-        player_col_width = 0.88  # Much wider player column
-    elif max_player_text_length > 15:  # Medium text
-        round_col_width = 0.15
-        player_col_width = 0.85
-    else:  # Short text
-        round_col_width = 0.2   # Default
-        player_col_width = 0.8
+    # Simplified: Always use wide player column to prevent cropping
+    round_col_width = 0.1   # Very narrow round column
+    player_col_width = 0.9  # Very wide player column
     
-    # Mobile vs Desktop settings with aggressive width adjustment
+    # Simplified: Always use very wide tables to prevent cropping
     if mobile_optimized:
-        # Much more aggressive width increases to prevent any cropping
-        if max_player_text_length > 25:
-            figsize = (10, 8)   # Very wide for long text
-            table_fontsize = 12  # Slightly smaller font to fit more
-        elif max_player_text_length > 15:
-            figsize = (9, 8)    # Wide for medium text
-            table_fontsize = 13
-        else:
-            figsize = (8, 8)    # Wider default
-            table_fontsize = 14
-        title_fontsize = 20
-        dpi = 150
+        # Mobile: VERY wide to handle any text length
+        figsize = (12, 8)   # Extra wide for mobile
+        title_fontsize = 18
+        table_fontsize = 14
+        dpi = 120
     else:
-        # Desktop always has enough space
-        figsize = (8, 10)
+        # Desktop: Professional width
+        figsize = (10, 10)
         title_fontsize = 24
         table_fontsize = 16
-        dpi = 200
+        dpi = 150
     
     # Create figure
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
