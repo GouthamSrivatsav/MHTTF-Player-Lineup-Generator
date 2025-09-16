@@ -3,6 +3,18 @@ import pandas as pd
 import itertools
 from PIL import Image, ImageDraw, ImageFont
 import io
+import base64
+try:
+    import imgkit
+    IMGKIT_AVAILABLE = True
+except ImportError:
+    IMGKIT_AVAILABLE = False
+    
+try:
+    import weasyprint
+    WEASYPRINT_AVAILABLE = True
+except ImportError:
+    WEASYPRINT_AVAILABLE = False
 
 # Configure Streamlit page layout for full screen width
 st.set_page_config(page_title="MHTTF Village League Tennis Lineup Generator", layout="wide")
@@ -181,137 +193,259 @@ def format_player_names(option):
         return " / ".join(option)
     return option
 
-def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
-    """Create lineup image optimized for mobile or desktop/print"""
+def create_lineup_html_table(selected_lineup, team_name, mobile_optimized=False):
+    """Create HTML table for lineup that can be converted to image"""
     
-    if mobile_optimized:
-        # Mobile-optimized: Simple, direct approach with HUGE fonts
-        width, height = 800, 1600
-        title_size, header_size, text_size = 120, 100, 85  # MASSIVE fonts
-        table_x, table_y = 30, 200
-        table_width = width - 60
-        row_height = 140  # Very tall rows
-        col1_width = 120
-        text_padding_x, text_padding_y = 25, 35
-        title_y = 150
-    else:
-        # Desktop/Print optimized: Large image with professional layout
-        width, height = 1200, 1600
-        title_size, header_size, text_size = 60, 36, 32
-        table_x, table_y = 100, 320
-        table_width = width - 200
-        row_height = 120
-        col1_width = 200
-        text_padding_x, text_padding_y = 30, 40
-        title_y = 150
+    # Define rounds in proper order
+    rounds_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
     
-    # Common colors
-    background_color = (255, 248, 220)  # Cornsilk (Cream) background
-    table_bg_color = (255, 160, 122)  # Light Salmon table background
-    header_bg_color = (255, 160, 122)  # Light Salmon header (matching table)
-    text_color = (0, 0, 0)  # Bold black text
-    header_text_color = (0, 0, 0)  # Bold black header text
-    border_color = (0, 100, 200)  # Dark blue borders
-    
-    # Create image - simple direct approach for mobile
-    img = Image.new('RGB', (width, height), background_color)
-    draw = ImageDraw.Draw(img)
-    
-    # Font options available (in order of preference):
-    # 1. Helvetica Bold - Clean, professional
-    # 2. Arial Bold - Similar to Helvetica
-    # 3. Times New Roman Bold - Classic serif
-    # 4. Verdana Bold - Web-friendly sans-serif
-    # 5. Georgia Bold - Readable serif
-    # 6. Tahoma Bold - Compact sans-serif
-    
-    # Load fonts with dynamic sizes based on optimization target
-    try:
-        # Try Helvetica Bold first
-        title_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", title_size, index=1)
-        header_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", header_size, index=1)
-        text_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", text_size, index=1)
-    except:
-        try:
-            # Try Helvetica regular (without bold)
-            title_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", title_size)
-            header_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", header_size)
-            text_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", text_size)
-        except:
-            try:
-                # Try Arial Bold
-                title_font = ImageFont.truetype("arialbd.ttf", title_size)
-                header_font = ImageFont.truetype("arialbd.ttf", header_size)
-                text_font = ImageFont.truetype("arialbd.ttf", text_size)
-            except:
-                try:
-                    # Try regular Arial
-                    title_font = ImageFont.truetype("arial.ttf", title_size)
-                    header_font = ImageFont.truetype("arial.ttf", header_size)
-                    text_font = ImageFont.truetype("arial.ttf", text_size)
-                except:
-                    # Fallback to default
-                    title_font = ImageFont.load_default()
-                    header_font = ImageFont.load_default()
-                    text_font = ImageFont.load_default()
-    
-    # Draw only team name as heading
-    team_text = f"Team: {team_name}"
-    team_bbox = draw.textbbox((0, 0), team_text, font=title_font)
-    team_width = team_bbox[2] - team_bbox[0]
-    draw.text(((width - team_width) // 2, title_y), team_text, fill=(0, 0, 0), font=title_font)
-    
-    # Table dimensions using dynamic values
-    col2_width = table_width - col1_width  # Player column
-    
-    # Draw table background
-    table_height = row_height * 9  # 8 data rows + 1 header
-    draw.rectangle([table_x, table_y, table_x + table_width, table_y + table_height], 
-                   fill=table_bg_color, outline=border_color, width=4)
-    
-    # Draw header row
-    draw.rectangle([table_x, table_y, table_x + table_width, table_y + row_height], 
-                   fill=header_bg_color, outline=border_color, width=4)
-    
-    # Header text using dynamic positioning
-    draw.text((table_x + text_padding_x, table_y + text_padding_y), "Round", fill=header_text_color, font=header_font)
-    draw.text((table_x + col1_width + text_padding_x, table_y + text_padding_y), "Player(s)", fill=header_text_color, font=header_font)
-    
-    # Draw column separator line
-    draw.line([table_x + col1_width, table_y, table_x + col1_width, table_y + table_height], 
-              fill=border_color, width=4)
-    
-    # Draw data rows
-    round_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
-    
-    for i, round_name in enumerate(round_order):
-        row_y = table_y + row_height * (i + 1)
-        
-        # Draw horizontal line
-        draw.line([table_x, row_y, table_x + table_width, row_y], 
-                  fill=border_color, width=2)
-        
-        # Round name using dynamic positioning
-        draw.text((table_x + text_padding_x, row_y + text_padding_y), round_name, fill=text_color, font=text_font)
-        
-        # Player name(s) using dynamic positioning
+    # Create DataFrame for the lineup
+    lineup_data = []
+    for round_name in rounds_order:
         if round_name in selected_lineup:
             selection = selected_lineup[round_name]
             player_text = format_player_names(selection)
-            draw.text((table_x + col1_width + text_padding_x, row_y + text_padding_y), player_text, fill=text_color, font=text_font)
         else:
-            draw.text((table_x + col1_width + text_padding_x, row_y + text_padding_y), "Not selected", 
-                     fill=(150, 150, 150), font=text_font)
+            player_text = "Not selected"
+        lineup_data.append({"Round": round_name, "Player(s)": player_text})
     
-    # Convert to bytes for download
-    img_buffer = io.BytesIO()
+    df = pd.DataFrame(lineup_data)
     
+    # Mobile or desktop styling
     if mobile_optimized:
-        # Save with maximum quality for mobile - simple approach
-        img.save(img_buffer, format='PNG', quality=100, optimize=False)
+        # Mobile-optimized CSS
+        table_style = """
+        <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #FFF8DC;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #FFF8DC;
+        }
+        h1 {
+            text-align: center;
+            font-size: 48px;
+            font-weight: bold;
+            color: #000;
+            margin: 30px 0;
+            line-height: 1.2;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #FFA07A;
+            border: 3px solid #006064;
+            font-size: 36px;
+            font-weight: bold;
+        }
+        th {
+            background-color: #FFA07A;
+            color: #000;
+            padding: 25px 20px;
+            text-align: left;
+            border: 2px solid #006064;
+            font-size: 38px;
+            font-weight: bold;
+        }
+        td {
+            padding: 25px 20px;
+            border: 2px solid #006064;
+            color: #000;
+            font-weight: bold;
+            line-height: 1.3;
+            word-wrap: break-word;
+        }
+        .round-col {
+            width: 25%;
+            text-align: center;
+            font-size: 38px;
+        }
+        .player-col {
+            width: 75%;
+            font-size: 34px;
+        }
+        </style>
+        """
     else:
-        img.save(img_buffer, format='PNG', quality=95, dpi=(300, 300))
+        # Desktop/Print-optimized CSS
+        table_style = """
+        <style>
+        body {
+            margin: 0;
+            padding: 40px;
+            background-color: #FFF8DC;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #FFF8DC;
+        }
+        h1 {
+            text-align: center;
+            font-size: 48px;
+            font-weight: bold;
+            color: #000;
+            margin: 40px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #FFA07A;
+            border: 3px solid #006064;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        th {
+            background-color: #FFA07A;
+            color: #000;
+            padding: 20px;
+            text-align: left;
+            border: 2px solid #006064;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        td {
+            padding: 20px;
+            border: 2px solid #006064;
+            color: #000;
+            font-weight: bold;
+        }
+        .round-col {
+            width: 20%;
+            text-align: center;
+            font-size: 26px;
+        }
+        .player-col {
+            width: 80%;
+            font-size: 24px;
+        }
+        </style>
+        """
     
+    # Generate HTML with CSS
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        {table_style}
+    </head>
+    <body>
+        <div class="container">
+            <h1>Team: {team_name}</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="round-col">Round</th>
+                        <th class="player-col">Player(s)</th>
+                    </tr>
+                </thead>
+                <tbody>
+    """
+    
+    for _, row in df.iterrows():
+        html_content += f"""
+                    <tr>
+                        <td class="round-col">{row['Round']}</td>
+                        <td class="player-col">{row['Player(s)']}</td>
+                    </tr>
+        """
+    
+    html_content += """
+                </tbody>
+            </table>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return html_content
+
+def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
+    """Create lineup image using HTML-to-image conversion for better text rendering"""
+    
+    # Try HTML-to-image approach first
+    try:
+        html_content = create_lineup_html_table(selected_lineup, team_name, mobile_optimized)
+        
+        # Try imgkit first (requires wkhtmltopdf)
+        if IMGKIT_AVAILABLE:
+            try:
+                options = {
+                    'format': 'png',
+                    'encoding': "UTF-8",
+                    'enable-local-file-access': None,
+                    'width': 600 if mobile_optimized else 1000,
+                    'height': 1200 if mobile_optimized else 1400,
+                    'quality': 100,
+                }
+                img_data = imgkit.from_string(html_content, False, options=options)
+                return img_data
+            except Exception as e:
+                st.warning(f"imgkit failed: {e}")
+        
+        # Try weasyprint as fallback
+        if WEASYPRINT_AVAILABLE:
+            try:
+                html_doc = weasyprint.HTML(string=html_content)
+                png_bytes = html_doc.write_png()
+                return png_bytes
+            except Exception as e:
+                st.warning(f"weasyprint failed: {e}")
+        
+        # If both fail, fall back to PIL silently
+        pass
+        
+    except Exception as e:
+        st.error(f"HTML rendering failed: {e}")
+    
+    # Fallback to PIL method - but much simpler
+    if mobile_optimized:
+        width, height = 600, 1200
+        title_size, text_size = 60, 48
+        row_height = 100
+    else:
+        width, height = 800, 1400
+        title_size, text_size = 48, 32
+        row_height = 80
+    
+    # Create simple image
+    img = Image.new('RGB', (width, height), (255, 248, 220))
+    draw = ImageDraw.Draw(img)
+    
+    try:
+        title_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", title_size)
+        text_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", text_size)
+    except:
+        title_font = ImageFont.load_default()
+        text_font = ImageFont.load_default()
+    
+    # Simple title
+    draw.text((50, 50), f"Team: {team_name}", fill=(0, 0, 0), font=title_font)
+    
+    # Simple table
+    rounds_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
+    y_pos = 150
+    
+    for round_name in rounds_order:
+        if round_name in selected_lineup:
+            selection = selected_lineup[round_name]
+            player_text = format_player_names(selection)
+        else:
+            player_text = "Not selected"
+        
+        draw.text((50, y_pos), f"{round_name}: {player_text}", fill=(0, 0, 0), font=text_font)
+        y_pos += row_height
+    
+    img_buffer = io.BytesIO()
+    img.save(img_buffer, format='PNG', quality=100)
     img_buffer.seek(0)
     return img_buffer.getvalue()
 
