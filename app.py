@@ -172,6 +172,13 @@ def is_available(option):
         return not (set(option) & used_players)
     return option not in used_players
 
+# Function to format player names (singles or doubles)
+def format_player_names(option):
+    """Format player names with / for doubles pairs, plain text for singles"""
+    if isinstance(option, tuple):
+        return " / ".join(option)
+    return option
+
 st.header("Select Players for Each Round")
 
 # Create columns for better layout
@@ -202,7 +209,7 @@ with col1:
             for i, option in enumerate(available_options):
                 col_idx = i % 4
                 with cols[col_idx]:
-                    option_text = ", ".join(option) if isinstance(option, tuple) else option
+                    option_text = format_player_names(option)
                     is_selected = st.session_state.selected_lineup.get(round_name) == option
                     
                     button_help = "Click to deselect" if is_selected else "Click to select"
@@ -224,7 +231,7 @@ with col1:
         # Show current selection for this round
         if round_name in st.session_state.selected_lineup:
             selected = st.session_state.selected_lineup[round_name]
-            selected_text = ", ".join(selected) if isinstance(selected, tuple) else selected
+            selected_text = format_player_names(selected)
             
             # Create columns for selection display and deselect button
             sel_col1, sel_col2 = st.columns([3, 1])
@@ -244,9 +251,15 @@ with col2:
     
     if st.session_state.selected_lineup:
         st.subheader("Selected Players:")
-        for round_name, selection in st.session_state.selected_lineup.items():
-            selection_text = ", ".join(selection) if isinstance(selection, tuple) else selection
-            st.write(f"**{round_name}:** {selection_text}")
+        # Define the correct order for displaying rounds
+        round_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
+        
+        # Display rounds in the correct order
+        for round_name in round_order:
+            if round_name in st.session_state.selected_lineup:
+                selection = st.session_state.selected_lineup[round_name]
+                selection_text = format_player_names(selection)
+                st.write(f"**{round_name}:** {selection_text}")
         
         # Show completion status
         total_rounds = len(rounds_info)
@@ -257,11 +270,12 @@ with col2:
         if completed_rounds == total_rounds:
             st.success("🎉 Lineup Complete!")
             
-            # Create downloadable lineup
-            final_lineup = {
-                round_name: ", ".join(selection) if isinstance(selection, tuple) else selection
-                for round_name, selection in st.session_state.selected_lineup.items()
-            }
+            # Create downloadable lineup in correct order
+            final_lineup = {}
+            for round_name in round_order:
+                if round_name in st.session_state.selected_lineup:
+                    selection = st.session_state.selected_lineup[round_name]
+                    final_lineup[round_name] = format_player_names(selection)
             lineup_df = pd.DataFrame([final_lineup])
             csv_data = lineup_df.to_csv(index=False).encode("utf-8")
             st.download_button(
