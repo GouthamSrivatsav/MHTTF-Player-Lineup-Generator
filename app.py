@@ -185,15 +185,15 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
     """Create lineup image optimized for mobile or desktop/print"""
     
     if mobile_optimized:
-        # Mobile-optimized: Ultra-large fonts for mobile readability
-        width, height = 500, 1200
-        title_size, header_size, text_size = 55, 45, 38
-        table_x, table_y = 15, 150
-        table_width = width - 30
-        row_height = 85
-        col1_width = 80
-        text_padding_x, text_padding_y = 15, 25
-        title_y = 100
+        # Mobile-optimized: MASSIVE fonts for mobile readability
+        width, height = 600, 1400
+        title_size, header_size, text_size = 80, 65, 55
+        table_x, table_y = 20, 180
+        table_width = width - 40
+        row_height = 110
+        col1_width = 100
+        text_padding_x, text_padding_y = 20, 30
+        title_y = 120
     else:
         # Desktop/Print optimized: Large image with professional layout
         width, height = 1200, 1600
@@ -213,28 +213,9 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
     header_text_color = (0, 0, 0)  # Bold black header text
     border_color = (0, 100, 200)  # Dark blue borders
     
-    # Create high-resolution image with anti-aliasing for mobile
-    if mobile_optimized:
-        # For mobile, create an even larger image then scale down for crisp text
-        scale_factor = 2
-        actual_width, actual_height = width * scale_factor, height * scale_factor
-        img = Image.new('RGB', (actual_width, actual_height), background_color)
-        draw = ImageDraw.Draw(img)
-        # Scale all measurements for the larger canvas
-        title_size *= scale_factor
-        header_size *= scale_factor
-        text_size *= scale_factor
-        table_x *= scale_factor
-        table_y *= scale_factor
-        table_width *= scale_factor
-        row_height *= scale_factor
-        col1_width *= scale_factor
-        text_padding_x *= scale_factor
-        text_padding_y *= scale_factor
-        title_y *= scale_factor
-    else:
-        img = Image.new('RGB', (width, height), background_color)
-        draw = ImageDraw.Draw(img)
+    # Create image - simple direct approach for mobile
+    img = Image.new('RGB', (width, height), background_color)
+    draw = ImageDraw.Draw(img)
     
     # Font options available (in order of preference):
     # 1. Helvetica Bold - Clean, professional
@@ -326,9 +307,8 @@ def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
     img_buffer = io.BytesIO()
     
     if mobile_optimized:
-        # Scale down the super-high-res image for crisp mobile display
-        img_resized = img.resize((width, height), Image.Resampling.LANCZOS)
-        img_resized.save(img_buffer, format='PNG', quality=100, optimize=True)
+        # Save with maximum quality for mobile
+        img.save(img_buffer, format='PNG', quality=100, optimize=True, dpi=(150, 150))
     else:
         img.save(img_buffer, format='PNG', quality=95, dpi=(300, 300))
     
