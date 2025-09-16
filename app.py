@@ -228,6 +228,14 @@ def create_html_table(selected_lineup, team_name, mobile_optimized=False):
     
     rounds_order = ["S1", "S2", "S3", "D1", "D2", "D3", "D4", "D5"]
     
+    # Debug: Print the selected lineup to see what we're working with
+    print("DEBUG HTML Table - Selected lineup:")
+    for round_name in rounds_order:
+        if round_name in selected_lineup:
+            print(f"  {round_name}: {selected_lineup[round_name]} (type: {type(selected_lineup[round_name])})")
+        else:
+            print(f"  {round_name}: Not selected")
+    
     # Mobile vs desktop styling
     if mobile_optimized:
         container_width = "800px"
@@ -324,7 +332,8 @@ def create_html_table(selected_lineup, team_name, mobile_optimized=False):
             if isinstance(selection, tuple) and len(selection) >= 2:
                 combined = " / ".join(selection)
                 if len(combined) > 20:
-                    player_text = f"{selection[0]} /\\n{selection[1]}"
+                    # Use actual newline character, not escaped
+                    player_text = f"{selection[0]} /\n{selection[1]}"
                 else:
                     player_text = combined
             else:
@@ -332,10 +341,13 @@ def create_html_table(selected_lineup, team_name, mobile_optimized=False):
         else:
             player_text = "Not selected"
         
+        # Escape any HTML characters and preserve newlines
+        escaped_player_text = player_text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        
         html_content += f"""
                     <tr>
                         <td class="round-col">{round_name}</td>
-                        <td class="player-col">{player_text}</td>
+                        <td class="player-col">{escaped_player_text}</td>
                     </tr>
         """
     
