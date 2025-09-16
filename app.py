@@ -189,10 +189,16 @@ def is_available(option):
     return option not in used_players
 
 # Function to format player names (singles or doubles)
-def format_player_names(option):
+def format_player_names(option, max_length=35):
     """Format player names with / for doubles pairs, plain text for singles"""
     if isinstance(option, tuple):
-        return " / ".join(option)
+        # For doubles, check total length
+        combined = " / ".join(option)
+        if len(combined) > max_length:
+            # Break into two lines with / at end of first line
+            return f"{option[0]} /\n{option[1]}"
+        else:
+            return combined
     return option
 
 
