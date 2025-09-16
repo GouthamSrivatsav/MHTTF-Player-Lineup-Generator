@@ -181,10 +181,31 @@ def format_player_names(option):
         return " / ".join(option)
     return option
 
-def create_lineup_image(selected_lineup, team_name):
-    """Create a mobile-first lineup image with huge fonts"""
-    # Mobile-first dimensions - portrait orientation like phone screen
-    width, height = 400, 800  # Very small, phone-like aspect ratio
+def create_lineup_image(selected_lineup, team_name, mobile_optimized=False):
+    """Create lineup image optimized for mobile or desktop/print"""
+    
+    if mobile_optimized:
+        # Mobile-optimized: Small image with huge fonts
+        width, height = 400, 800
+        title_size, header_size, text_size = 32, 24, 20
+        table_x, table_y = 20, 120
+        table_width = width - 40
+        row_height = 55
+        col1_width = 60
+        text_padding_x, text_padding_y = 10, 15
+        title_y = 80
+    else:
+        # Desktop/Print optimized: Large image with professional layout
+        width, height = 1200, 1600
+        title_size, header_size, text_size = 60, 36, 32
+        table_x, table_y = 100, 320
+        table_width = width - 200
+        row_height = 120
+        col1_width = 200
+        text_padding_x, text_padding_y = 30, 40
+        title_y = 150
+    
+    # Common colors
     background_color = (255, 248, 220)  # Cornsilk (Cream) background
     table_bg_color = (255, 160, 122)  # Light Salmon table background
     header_bg_color = (255, 160, 122)  # Light Salmon header (matching table)
@@ -204,30 +225,30 @@ def create_lineup_image(selected_lineup, team_name):
     # 5. Georgia Bold - Readable serif
     # 6. Tahoma Bold - Compact sans-serif
     
-    # Use HUGE fonts relative to tiny image - mobile-first approach
+    # Load fonts with dynamic sizes based on optimization target
     try:
-        # Try Helvetica Bold first - massive sizes for mobile screens
-        title_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 32, index=1)  # 8% of width!
-        header_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 24, index=1) # 6% of width
-        text_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 20, index=1)   # 5% of width
+        # Try Helvetica Bold first
+        title_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", title_size, index=1)
+        header_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", header_size, index=1)
+        text_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", text_size, index=1)
     except:
         try:
             # Try Helvetica regular (without bold)
-            title_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 32)
-            header_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 24)
-            text_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 20)
+            title_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", title_size)
+            header_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", header_size)
+            text_font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", text_size)
         except:
             try:
                 # Try Arial Bold
-                title_font = ImageFont.truetype("arialbd.ttf", 32)
-                header_font = ImageFont.truetype("arialbd.ttf", 24)
-                text_font = ImageFont.truetype("arialbd.ttf", 20)
+                title_font = ImageFont.truetype("arialbd.ttf", title_size)
+                header_font = ImageFont.truetype("arialbd.ttf", header_size)
+                text_font = ImageFont.truetype("arialbd.ttf", text_size)
             except:
                 try:
                     # Try regular Arial
-                    title_font = ImageFont.truetype("arial.ttf", 32)
-                    header_font = ImageFont.truetype("arial.ttf", 24)
-                    text_font = ImageFont.truetype("arial.ttf", 20)
+                    title_font = ImageFont.truetype("arial.ttf", title_size)
+                    header_font = ImageFont.truetype("arial.ttf", header_size)
+                    text_font = ImageFont.truetype("arial.ttf", text_size)
                 except:
                     # Fallback to default
                     title_font = ImageFont.load_default()
@@ -238,15 +259,10 @@ def create_lineup_image(selected_lineup, team_name):
     team_text = f"Team: {team_name}"
     team_bbox = draw.textbbox((0, 0), team_text, font=title_font)
     team_width = team_bbox[2] - team_bbox[0]
-    draw.text(((width - team_width) // 2, 80), team_text, fill=(0, 0, 0), font=title_font)
+    draw.text(((width - team_width) // 2, title_y), team_text, fill=(0, 0, 0), font=title_font)
     
-    # Table dimensions - ultra compact for mobile-first
-    table_x = 20
-    table_y = 120
-    table_width = width - 40
-    row_height = 55  # Very compact rows
-    col1_width = 60   # Narrow round column
-    col2_width = table_width - col1_width  # Wide player column
+    # Table dimensions using dynamic values
+    col2_width = table_width - col1_width  # Player column
     
     # Draw table background
     table_height = row_height * 9  # 8 data rows + 1 header
@@ -257,9 +273,9 @@ def create_lineup_image(selected_lineup, team_name):
     draw.rectangle([table_x, table_y, table_x + table_width, table_y + row_height], 
                    fill=header_bg_color, outline=border_color, width=4)
     
-    # Header text - ultra compact mobile layout
-    draw.text((table_x + 10, table_y + 15), "Round", fill=header_text_color, font=header_font)
-    draw.text((table_x + col1_width + 10, table_y + 15), "Player(s)", fill=header_text_color, font=header_font)
+    # Header text using dynamic positioning
+    draw.text((table_x + text_padding_x, table_y + text_padding_y), "Round", fill=header_text_color, font=header_font)
+    draw.text((table_x + col1_width + text_padding_x, table_y + text_padding_y), "Player(s)", fill=header_text_color, font=header_font)
     
     # Draw column separator line
     draw.line([table_x + col1_width, table_y, table_x + col1_width, table_y + table_height], 
@@ -275,16 +291,16 @@ def create_lineup_image(selected_lineup, team_name):
         draw.line([table_x, row_y, table_x + table_width, row_y], 
                   fill=border_color, width=2)
         
-        # Round name - ultra compact mobile layout
-        draw.text((table_x + 10, row_y + 15), round_name, fill=text_color, font=text_font)
+        # Round name using dynamic positioning
+        draw.text((table_x + text_padding_x, row_y + text_padding_y), round_name, fill=text_color, font=text_font)
         
-        # Player name(s) - ultra compact mobile layout
+        # Player name(s) using dynamic positioning
         if round_name in selected_lineup:
             selection = selected_lineup[round_name]
             player_text = format_player_names(selection)
-            draw.text((table_x + col1_width + 10, row_y + 15), player_text, fill=text_color, font=text_font)
+            draw.text((table_x + col1_width + text_padding_x, row_y + text_padding_y), player_text, fill=text_color, font=text_font)
         else:
-            draw.text((table_x + col1_width + 10, row_y + 15), "Not selected", 
+            draw.text((table_x + col1_width + text_padding_x, row_y + text_padding_y), "Not selected", 
                      fill=(150, 150, 150), font=text_font)
     
     # Convert to bytes for download
@@ -374,18 +390,39 @@ with col1:
         
 
 with col2:
-    # Download lineup as image button - direct download
-    try:
-        image_data = create_lineup_image(st.session_state.selected_lineup, team_name)
-        st.download_button(
-            label="📸 Download Lineup Image",
-            data=image_data,
-            file_name=f"MHTTF_Lineup_{team_name}.png",
-            mime="image/png",
-            type="primary"
-        )
-    except Exception as e:
-        st.error(f"Error creating image: {str(e)}")
+    # Main download button to trigger format selection
+    if st.button("📸 Download Lineup Image", type="primary"):
+        st.session_state.show_download_options = True
+    
+    # Show download format options after main button is clicked
+    if st.session_state.get("show_download_options", False):
+        st.write("**Choose format:**")
+        
+        # Mobile-friendly download button
+        try:
+            mobile_image_data = create_lineup_image(st.session_state.selected_lineup, team_name, mobile_optimized=True)
+            st.download_button(
+                label="📱 Mobile Friendly",
+                data=mobile_image_data,
+                file_name=f"MHTTF_Lineup_{team_name}_Mobile.png",
+                mime="image/png",
+                help="Optimized for mobile viewing with large fonts"
+            )
+        except Exception as e:
+            st.error(f"Error creating mobile image: {str(e)}")
+        
+        # Desktop-friendly download button
+        try:
+            desktop_image_data = create_lineup_image(st.session_state.selected_lineup, team_name, mobile_optimized=False)
+            st.download_button(
+                label="🖥️ Desktop Friendly",
+                data=desktop_image_data,
+                file_name=f"MHTTF_Lineup_{team_name}_Desktop.png",
+                mime="image/png",
+                help="High-resolution image perfect for desktop viewing and printing"
+            )
+        except Exception as e:
+            st.error(f"Error creating desktop image: {str(e)}")
     
     st.divider()
     
