@@ -198,53 +198,64 @@ with col1:
     }
     
     for round_name, round_desc in rounds_info.items():
-        st.subheader(f"{round_name}: {round_desc}")
-        
-        # Get available options for this round
-        available_options = [opt for opt in candidates[round_name] if is_available(opt)]
-        
-        # Create buttons for each option (only if there are available options)
-        if available_options:
-            cols = st.columns(min(4, len(available_options)))
-            for i, option in enumerate(available_options):
-                col_idx = i % 4
-                with cols[col_idx]:
-                    option_text = format_player_names(option)
-                    is_selected = st.session_state.selected_lineup.get(round_name) == option
-                    
-                    button_help = "Click to deselect" if is_selected else "Click to select"
-                    if st.button(
-                        option_text, 
-                        key=f"{round_name}_{i}",
-                        type="primary" if is_selected else "secondary",
-                        help=button_help
-                    ):
-                        if is_selected:
-                            # Deselect if already selected
-                            if round_name in st.session_state.selected_lineup:
-                                del st.session_state.selected_lineup[round_name]
-                        else:
-                            # Select this option
-                            st.session_state.selected_lineup[round_name] = option
-                        st.rerun()
-        
-        # Show current selection for this round
+        # Show current selection status in the expander label
+        current_selection = ""
         if round_name in st.session_state.selected_lineup:
             selected = st.session_state.selected_lineup[round_name]
             selected_text = format_player_names(selected)
-            
-            # Create columns for selection display and deselect button
-            sel_col1, sel_col2 = st.columns([3, 1])
-            with sel_col1:
-                st.success(f"Selected: {selected_text}")
-            with sel_col2:
-                if st.button("❌ Clear", key=f"clear_{round_name}", help="Deselect this player"):
-                    del st.session_state.selected_lineup[round_name]
-                    st.rerun()
-        else:
-            st.info("No selection made")
+            # Use non-breaking spaces (&nbsp;) to create large visual spacing
+            large_space = "\u00A0" * 20  # 20 non-breaking spaces
+            current_selection = f"{large_space}✅ {selected_text}"
         
-        st.divider()
+        # Create collapsible expander for each round (closed by default)
+        with st.expander(f"{round_name}: {round_desc}{current_selection}", expanded=False):
+            # Show clear button at the top if there's a selection
+            if round_name in st.session_state.selected_lineup:
+                selected = st.session_state.selected_lineup[round_name]
+                selected_text = format_player_names(selected)
+                
+                # Create columns for current selection and clear button at the top
+                top_col1, top_col2 = st.columns([3, 1])
+                with top_col1:
+                    st.success(f"Current: {selected_text}")
+                with top_col2:
+                    if st.button("❌ Clear", key=f"top_clear_{round_name}", help="Clear selection"):
+                        del st.session_state.selected_lineup[round_name]
+                        st.rerun()
+                
+                st.divider()  # Separator between current selection and options
+            
+            # Get available options for this round
+            available_options = [opt for opt in candidates[round_name] if is_available(opt)]
+            
+            # Create buttons for each option (only if there are available options)
+            if available_options:
+                cols = st.columns(min(4, len(available_options)))
+                for i, option in enumerate(available_options):
+                    col_idx = i % 4
+                    with cols[col_idx]:
+                        option_text = format_player_names(option)
+                        is_selected = st.session_state.selected_lineup.get(round_name) == option
+                        
+                        button_help = "Click to deselect" if is_selected else "Click to select"
+                        if st.button(
+                            option_text, 
+                            key=f"{round_name}_{i}",
+                            type="primary" if is_selected else "secondary",
+                            help=button_help
+                        ):
+                            if is_selected:
+                                # Deselect if already selected
+                                if round_name in st.session_state.selected_lineup:
+                                    del st.session_state.selected_lineup[round_name]
+                            else:
+                                # Select this option
+                                st.session_state.selected_lineup[round_name] = option
+                            st.rerun()
+            
+            # Show status message if no selection
+            if round_name not in st.session_state.selected_lineup:
+                st.info("No selection made")
 
 with col2:
     st.header("Current Lineup")
