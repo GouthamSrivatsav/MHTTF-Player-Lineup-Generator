@@ -89,7 +89,7 @@ st.markdown("""
 
 # ---- Eligibility rules ----
 def eligible_s1(r): return r in {4.0, 4.5}
-def eligible_s2(r): return r in {3.0, 3.5}
+def eligible_s2(r): return r == 3.5
 def eligible_s3(r): return r == 3.0
 def eligible_d1(r1, r2): return r1 + r2 in {8.0, 8.5}
 def eligible_d2_d3(r1, r2): return r1 + r2 in {7.0, 7.5}
